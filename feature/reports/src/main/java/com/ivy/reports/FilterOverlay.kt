@@ -292,35 +292,37 @@ fun BoxWithConstraintsScope.FilterOverlay(
         }
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .alpha(percentVisible)
-            .align(Alignment.BottomCenter)
-            .zIndex(200f)
-            .padding(bottom = 32.dp)
-    ) {
-        Spacer(Modifier.width(24.dp))
-
-        CloseButton {
-            onClose()
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        IvyButton(
-            text = stringResource(R.string.apply_filter),
-            iconStart = R.drawable.ic_filter_xs,
-            backgroundGradient = GradientGreen,
-            padding = 10.dp,
+    if (visible) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(percentVisible)
+                .align(Alignment.BottomCenter)
+                .zIndex(200f)
+                .padding(bottom = 32.dp)
         ) {
-            if (localFilter != null) {
-                onSetFilter(localFilter!!)
-            }
-            onClose()
-        }
+            Spacer(Modifier.width(24.dp))
 
-        Spacer(Modifier.width(24.dp))
+            CloseButton {
+                onClose()
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            IvyButton(
+                text = stringResource(R.string.apply_filter),
+                iconStart = R.drawable.ic_filter_xs,
+                backgroundGradient = GradientGreen,
+                padding = 10.dp,
+            ) {
+                if (localFilter != null) {
+                    onSetFilter(localFilter!!)
+                }
+                onClose()
+            }
+
+            Spacer(Modifier.width(24.dp))
+        }
     }
 
     if (percentVisible > 0.01f) {
