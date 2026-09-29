@@ -36,7 +36,6 @@ import com.ivy.design.api.LocalTimeProvider
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.utils.thenIf
-import com.ivy.legacy.data.model.MainTab
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.ui.component.transaction.TransactionsDividerLine
@@ -276,21 +275,6 @@ fun CashFlowInfo(
             solidBackground = true,
         ) {
             reportNav.navigateTo(ReportScreen)
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // fork 增补：人生指南入口（切换到底部"指南"Tab）
-        val ivyCtx = ivyWalletCtx()
-        IvyOutlinedButton(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
-            iconStart = R.drawable.ic_custom_education_m,
-            text = "人生指南（循证生活建议）",
-            solidBackground = true,
-        ) {
-            ivyCtx.selectMainTab(MainTab.LIFEGUIDE)
         }
 
         val cashflow = monthlyIncome - monthlyExpenses
