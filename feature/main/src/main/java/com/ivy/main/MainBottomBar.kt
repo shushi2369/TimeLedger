@@ -55,6 +55,7 @@ import com.ivy.legacy.utils.springBounceFast
 import com.ivy.legacy.utils.toDensityDp
 import com.ivy.legacy.utils.toDensityPx
 import com.ivy.ui.R
+import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.GradientGreen
 import com.ivy.wallet.ui.theme.GradientIvy
@@ -131,6 +132,7 @@ fun BoxWithConstraintsScope.BottomBar(
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 左侧两个 Tab
         Tab(
             icon = R.drawable.ic_home,
             name = stringResource(R.string.home),
@@ -141,6 +143,19 @@ fun BoxWithConstraintsScope.BottomBar(
         }
 
         Tab(
+            icon = R.drawable.ic_custom_stats_m,
+            name = "报表",
+            selected = tab == MainTab.REPORTS,
+            selectedColor = Blue
+        ) {
+            selectTab(MainTab.REPORTS)
+        }
+
+        // 中间留出记账按钮的位置，左右各两个 Tab 形成对称
+        Spacer(Modifier.width(FAB_BUTTON_SIZE))
+
+        // 右侧两个 Tab
+        Tab(
             icon = R.drawable.ic_custom_education_m,
             name = "指南",
             selected = tab == MainTab.LIFEGUIDE,
@@ -149,27 +164,13 @@ fun BoxWithConstraintsScope.BottomBar(
             selectTab(MainTab.LIFEGUIDE)
         }
 
-        if (tab == MainTab.LIFEGUIDE) {
-            // 指南页无记账按钮，三个 Tab 平分底栏
-            Tab(
-                icon = R.drawable.ic_accounts,
-                name = stringResource(R.string.accounts),
-                selected = tab == MainTab.ACCOUNTS,
-                selectedColor = Green
-            ) {
-                selectTab(MainTab.ACCOUNTS)
-            }
-            Spacer(Modifier.weight(1f))
-        } else {
-            Spacer(Modifier.weight(1f))
-            Tab(
-                icon = R.drawable.ic_accounts,
-                name = stringResource(R.string.accounts),
-                selected = tab == MainTab.ACCOUNTS,
-                selectedColor = Green
-            ) {
-                selectTab(MainTab.ACCOUNTS)
-            }
+        Tab(
+            icon = R.drawable.ic_accounts,
+            name = stringResource(R.string.accounts),
+            selected = tab == MainTab.ACCOUNTS,
+            selectedColor = Green
+        ) {
+            selectTab(MainTab.ACCOUNTS)
         }
     }
 
@@ -191,8 +192,7 @@ fun BoxWithConstraintsScope.BottomBar(
     val fabStartY = ivyContext.screenHeight - navigationBarInset() -
             30.dp.toDensityPx() - FAB_BUTTON_SIZE.toDensityPx()
 
-    val showFab = tab != MainTab.LIFEGUIDE
-    if (showFab) TransactionButtons(
+    TransactionButtons(
         buttonsShownPercent = buttonsShownPercent,
 
         fabStartX = fabStartX,
@@ -208,7 +208,7 @@ fun BoxWithConstraintsScope.BottomBar(
         mutableStateOf(Offset.Zero)
     }
     // + & x button
-    if (showFab) IvyCircleButton(
+    IvyCircleButton(
         modifier = Modifier
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
@@ -275,7 +275,7 @@ fun BoxWithConstraintsScope.BottomBar(
                 GradientGreen
             }
 
-            MainTab.LIFEGUIDE -> {
+            MainTab.REPORTS, MainTab.LIFEGUIDE -> {
                 GradientIvy
             }
         },
@@ -283,7 +283,7 @@ fun BoxWithConstraintsScope.BottomBar(
         tint = when (tab) {
             MainTab.HOME -> White
             MainTab.ACCOUNTS -> White
-            MainTab.LIFEGUIDE -> White
+            MainTab.REPORTS, MainTab.LIFEGUIDE -> White
         },
         onLongClick = if (tab == MainTab.HOME) {
             {
@@ -300,9 +300,8 @@ fun BoxWithConstraintsScope.BottomBar(
                 showAddAccountModal()
             }
 
-            MainTab.LIFEGUIDE -> {
-                // 指南页不显示记账按钮，此分支不可达
-            }
+            // 报表/指南页的记账按钮也直达快速记账
+            MainTab.REPORTS, MainTab.LIFEGUIDE -> nav.navigateTo(QuickEntryScreen)
         }
     }
 }

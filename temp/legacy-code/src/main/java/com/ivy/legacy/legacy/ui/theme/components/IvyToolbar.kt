@@ -12,7 +12,10 @@ import com.ivy.wallet.ui.theme.gradientCutBackgroundBottom
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 enum class BackButtonType {
-    BACK, CLOSE
+    BACK, CLOSE,
+
+    /** fork 增补：嵌入 Tab 时不需要返回按钮 */
+    NONE
 }
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
@@ -48,6 +51,10 @@ fun IvyToolbar(
                 ) {
                     onBack()
                 }
+            }
+
+            BackButtonType.NONE -> {
+                // 嵌入底部 Tab 的场景不显示返回按钮
             }
         }
 

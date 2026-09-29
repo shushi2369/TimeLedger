@@ -22,6 +22,9 @@ import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.MainScreen
 import com.ivy.navigation.navigation
+// 报表页是 BoxWithConstraintsScope 的扩展函数，需 import（全限定名调用不可行）；
+// 简单名与导航层 ReportScreen 数据对象冲突，故用别名。
+import com.ivy.reports.ReportScreen as ReportTabContent
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import com.ivy.wallet.ui.theme.modal.edit.AccountModal
 import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
@@ -62,8 +65,13 @@ private fun BoxWithConstraintsScope.UI(
 ) {
     when (tab) {
         MainTab.HOME -> HomeTab()
-        MainTab.ACCOUNTS -> AccountsTab()
+        MainTab.REPORTS -> ReportTabContent(
+            screen = com.ivy.navigation.ReportScreen,
+            // 作为 Tab 嵌入，不显示返回按钮
+            showToolbarBackButton = false,
+        )
         MainTab.LIFEGUIDE -> com.ivy.lifeguide.LifeGuideTab()
+        MainTab.ACCOUNTS -> AccountsTab()
     }
 
     var accountModalData: AccountModalData? by remember { mutableStateOf(null) }

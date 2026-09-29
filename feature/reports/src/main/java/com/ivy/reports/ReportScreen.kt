@@ -75,14 +75,17 @@ import java.util.UUID
 @ExperimentalFoundationApi
 @Composable
 fun BoxWithConstraintsScope.ReportScreen(
-    screen: ReportScreen
+    screen: ReportScreen,
+    // fork 增补：作为底部 Tab 嵌入时不显示返回按钮
+    showToolbarBackButton: Boolean = true,
 ) {
     val viewModel: ReportViewModel = viewModel()
     val state = viewModel.uiState()
 
     UI(
         state = state,
-        onEventHandler = viewModel::onEvent
+        onEventHandler = viewModel::onEvent,
+        showToolbarBackButton = showToolbarBackButton,
     )
 }
 
@@ -90,7 +93,8 @@ fun BoxWithConstraintsScope.ReportScreen(
 @Composable
 private fun BoxWithConstraintsScope.UI(
     state: ReportScreenState = ReportScreenState(),
-    onEventHandler: (ReportScreenEvent) -> Unit = {}
+    onEventHandler: (ReportScreenEvent) -> Unit = {},
+    showToolbarBackButton: Boolean = true,
 ) {
     val legacyTransactions = state.transactions
     val nav = navigation()
@@ -127,6 +131,7 @@ private fun BoxWithConstraintsScope.UI(
     ) {
         stickyHeader {
             Toolbar(
+                showBackButton = showToolbarBackButton,
                 onExport = {
                     onEventHandler.invoke(ReportScreenEvent.OnExport(context = context))
                 },
@@ -368,11 +373,12 @@ private fun NoFilterEmptyState(
 @Composable
 private fun Toolbar(
     onExport: () -> Unit,
-    onFilter: () -> Unit
+    onFilter: () -> Unit,
+    showBackButton: Boolean = true,
 ) {
     val nav = navigation()
     IvyToolbar(
-        backButtonType = BackButtonType.CLOSE,
+        backButtonType = if (showBackButton) BackButtonType.CLOSE else BackButtonType.NONE,
         onBack = {
             nav.back()
         }
