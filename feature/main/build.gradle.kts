@@ -11,6 +11,7 @@ dependencies {
     implementation(projects.feature.home)
     implementation(projects.feature.reports)
     implementation(projects.feature.lifeguide)
+    implementation(projects.feature.timetrack)
     implementation(projects.shared.base)
     implementation(projects.shared.data.core)
     implementation(projects.shared.domain)

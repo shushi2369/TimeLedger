@@ -186,7 +186,7 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
                 ivyContext = ivyContext,
                 percentTransition = percentTransition
             ),
-            text = "Ivy Wallet",
+            text = "Simple记账",
             style = UI.typo.h2.style(
                 color = UI.colors.pureInverse,
                 fontWeight = FontWeight.ExtraBold
@@ -217,7 +217,7 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
                 .clickable {
                     openUrl(
                         uriHandler = uriHandler,
-                        url = Constants.URL_IVY_WALLET_REPO
+                        url = Constants.URL_TIMELEDGER_REPO
                     )
                 }
                 .padding(vertical = 8.dp)

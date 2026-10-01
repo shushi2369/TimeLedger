@@ -160,7 +160,7 @@
     <string name="add_categories">添加类别</string>
     <string name="suggestions">建议</string>
     <string name="set">确认</string>
-    <string name="your_personal_money_manager">您的个人理财助手</string>
+    <string name="your_personal_money_manager">记账与时间管理助手</string>
     <string name="opensource">#开源</string>
     <string name="google_error_try_again">错误。请重试：%1$s</string>
     <string name="google_signing_in">正在登录……</string>
@@ -174,7 +174,7 @@
     <string name="terms_conditions"><![CDATA[条款和条件]]></string>
     <string name="by_signing_in">登录代表着您接受我们的%1$s和%2$s。</string>
     <string name="import_csv_file">导入 CSV 文件</string>
-    <string name="from_ivy_or_another_app">从 Ivy 或其他应用程序导入</string>
+    <string name="from_ivy_or_another_app">从其他应用程序导入备份文件</string>
     <string name="importing_another_time_warning">导入来自其他应用的备份文件可能需要最多 5 分钟。如果您愿意，您随时可以稍后导入您的数据。</string>
     <string name="import_backup_file">导入备份文件</string>
     <string name="start_fresh">从零开始</string>

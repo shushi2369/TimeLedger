@@ -163,7 +163,7 @@
     <string name="add_categories">Add categories</string>
     <string name="suggestions">Suggestions</string>
     <string name="set">Set</string>
-    <string name="your_personal_money_manager">Your personal money manager</string>
+    <string name="your_personal_money_manager">Bookkeeping &amp; time tracking assistant</string>
     <string name="opensource">#opensource</string>
     <string name="google_error_try_again">Error. Try again: %1$s</string>
     <string name="google_signing_in">Signing in…</string>
@@ -177,7 +177,7 @@
     <string name="terms_conditions"><![CDATA[Terms & Conditions]]></string>
     <string name="by_signing_in">By signing in, you accept our %1$s and %2$s.</string>
     <string name="import_csv_file">Import CSV file</string>
-    <string name="from_ivy_or_another_app">from Ivy or another app</string>
+    <string name="from_ivy_or_another_app">import a backup from another app</string>
     <string name="importing_another_time_warning">Importing a backup file from another app may take up to 5 minutes. You can always import your data later if you wish.</string>
     <string name="import_backup_file">Import backup file</string>
     <string name="start_fresh">Start fresh</string>

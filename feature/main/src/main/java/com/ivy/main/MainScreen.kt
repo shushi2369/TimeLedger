@@ -70,6 +70,7 @@ private fun BoxWithConstraintsScope.UI(
             // 作为 Tab 嵌入，不显示返回按钮
             showToolbarBackButton = false,
         )
+        MainTab.TIME -> com.ivy.timetrack.TimeTrackTab()
         MainTab.LIFEGUIDE -> com.ivy.lifeguide.LifeGuideTab()
         MainTab.ACCOUNTS -> AccountsTab()
     }

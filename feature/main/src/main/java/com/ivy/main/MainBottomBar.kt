@@ -77,6 +77,9 @@ import kotlin.math.roundToInt
 val TRN_BUTTON_CLICK_AREA_HEIGHT = 150.dp
 val FAB_BUTTON_SIZE = 56.dp
 
+/** 时间 Tab 的选中色，区别于主页 Ivy 绿/报表蓝/指南橙/账户绿。 */
+private val TimePurple = Color(0xFFC34CFF)
+
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun BoxWithConstraintsScope.BottomBar(
@@ -132,7 +135,7 @@ fun BoxWithConstraintsScope.BottomBar(
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 左侧两个 Tab
+        // 左侧三个 Tab
         Tab(
             icon = R.drawable.ic_home,
             name = stringResource(R.string.home),
@@ -151,7 +154,16 @@ fun BoxWithConstraintsScope.BottomBar(
             selectTab(MainTab.REPORTS)
         }
 
-        // 中间留出记账按钮的位置，左右各两个 Tab 形成对称
+        Tab(
+            icon = R.drawable.ic_time,
+            name = "时间",
+            selected = tab == MainTab.TIME,
+            selectedColor = TimePurple
+        ) {
+            selectTab(MainTab.TIME)
+        }
+
+        // 中间留出记账按钮的位置，左右 Tab 总体保持对称
         Spacer(Modifier.width(FAB_BUTTON_SIZE))
 
         // 右侧两个 Tab
@@ -188,7 +200,8 @@ fun BoxWithConstraintsScope.BottomBar(
     }
 
     // ------------------------------------ BUTTONS--------------------------------------------------
-    val fabStartX = ivyContext.screenWidth / 2 - FAB_BUTTON_SIZE.toDensityPx() / 2
+    // 6 等分槽位（5 Tab + FAB 空槽），FAB 悬浮在第 4 槽中心，避免遮挡相邻 Tab 图标
+    val fabStartX = ivyContext.screenWidth * 7 / 12 - FAB_BUTTON_SIZE.toDensityPx() / 2
     val fabStartY = ivyContext.screenHeight - navigationBarInset() -
             30.dp.toDensityPx() - FAB_BUTTON_SIZE.toDensityPx()
 
@@ -275,7 +288,7 @@ fun BoxWithConstraintsScope.BottomBar(
                 GradientGreen
             }
 
-            MainTab.REPORTS, MainTab.LIFEGUIDE -> {
+            MainTab.REPORTS, MainTab.TIME, MainTab.LIFEGUIDE -> {
                 GradientIvy
             }
         },
@@ -283,7 +296,7 @@ fun BoxWithConstraintsScope.BottomBar(
         tint = when (tab) {
             MainTab.HOME -> White
             MainTab.ACCOUNTS -> White
-            MainTab.REPORTS, MainTab.LIFEGUIDE -> White
+            MainTab.REPORTS, MainTab.TIME, MainTab.LIFEGUIDE -> White
         },
         onLongClick = if (tab == MainTab.HOME) {
             {
@@ -300,8 +313,8 @@ fun BoxWithConstraintsScope.BottomBar(
                 showAddAccountModal()
             }
 
-            // 报表/指南页的记账按钮也直达快速记账
-            MainTab.REPORTS, MainTab.LIFEGUIDE -> nav.navigateTo(QuickEntryScreen)
+            // 报表/时间/指南页的记账按钮也直达快速记账
+            MainTab.REPORTS, MainTab.TIME, MainTab.LIFEGUIDE -> nav.navigateTo(QuickEntryScreen)
         }
     }
 }
