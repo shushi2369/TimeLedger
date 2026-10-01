@@ -19,6 +19,7 @@ object TimeTrackDiModule {
     @Singleton
     fun provideTimeTrackDatabase(@ApplicationContext context: Context): TimeTrackDatabase =
         Room.databaseBuilder(context, TimeTrackDatabase::class.java, TimeTrackDatabase.DB_NAME)
+            .addMigrations(TimeTrackDatabase.MIGRATION_1_2)
             .build()
 
     @Provides

@@ -1,5 +1,7 @@
 package com.ivy.timetrack
 
+import android.content.Context
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,6 +12,7 @@ import com.ivy.timetrack.data.TimeActivityEntity
 import com.ivy.timetrack.data.TimeEntryDao
 import com.ivy.timetrack.data.TimeEntryEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -54,6 +57,7 @@ private const val DELETED_ACTIVITY_COLOR = 0xFF9E9E9E
 class TimeTrackViewModel @Inject constructor(
     private val activityDao: TimeActivityDao,
     private val entryDao: TimeEntryDao,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     var activities by mutableStateOf<List<TimeActivityEntity>>(emptyList())
@@ -88,28 +92,76 @@ class TimeTrackViewModel @Inject constructor(
     /**
      * 点击活动：无计时 → 开始；点进行中的活动 → 停止；点其他活动 → 停旧的并开始新的。
      * 单计时模式，避免并行计时的记账复杂度。
+     * 副作用：同步通知栏计时常驻（TimerService）。
      */
     fun toggle(activityId: String) {
         viewModelScope.launch {
+            var startedAt: Long? = null
             timerMutex.withLock {
                 withContext(Dispatchers.IO) {
                     val now = System.currentTimeMillis()
                     val running = entryDao.findRunning()
                     if (running != null) {
-                        entryDao.save(running.copy(endedAt = now))
+                        entryDao.save(running.copy(endedAt = now, pausedAt = null))
                     }
                     if (running == null || running.activityId != activityId) {
-                        entryDao.save(
-                            TimeEntryEntity(
-                                id = UUID.randomUUID().toString(),
-                                activityId = activityId,
-                                startedAt = now,
-                                endedAt = null,
-                            )
+                        val entry = TimeEntryEntity(
+                            id = UUID.randomUUID().toString(),
+                            activityId = activityId,
+                            startedAt = now,
+                            endedAt = null,
                         )
+                        entryDao.save(entry)
+                        startedAt = entry.startedAt
                     }
                 }
             }
+            startedAt?.let {
+                TimerService.start(context, it)
+            } ?: TimerService.stop(context)
+            refresh()
+        }
+    }
+
+    /** 暂停计时：记录暂停起点，通知栏常驻撤下。 */
+    fun pauseTimer() {
+        viewModelScope.launch {
+            timerMutex.withLock {
+                withContext(Dispatchers.IO) {
+                    entryDao.findRunning()?.let { running ->
+                        if (running.pausedAt == null) {
+                            entryDao.save(running.copy(pausedAt = System.currentTimeMillis()))
+                        }
+                    }
+                }
+            }
+            TimerService.stop(context)
+            refresh()
+        }
+    }
+
+    /** 继续计时：把暂停段累入 pausedMs，恢复通知栏常驻。 */
+    fun resumeTimer() {
+        viewModelScope.launch {
+            var startedAt: Long? = null
+            timerMutex.withLock {
+                withContext(Dispatchers.IO) {
+                    entryDao.findRunning()?.let { running ->
+                        val pausedAt = running.pausedAt
+                        if (pausedAt != null) {
+                            val now = System.currentTimeMillis()
+                            entryDao.save(
+                                running.copy(
+                                    pausedMs = running.pausedMs + (now - pausedAt),
+                                    pausedAt = null,
+                                )
+                            )
+                            startedAt = running.startedAt
+                        }
+                    }
+                }
+            }
+            startedAt?.let { TimerService.start(context, it) }
             refresh()
         }
     }
@@ -119,8 +171,54 @@ class TimeTrackViewModel @Inject constructor(
             timerMutex.withLock {
                 withContext(Dispatchers.IO) {
                     entryDao.findRunning()?.let { running ->
-                        entryDao.save(running.copy(endedAt = System.currentTimeMillis()))
+                        entryDao.save(
+                            running.copy(
+                                endedAt = System.currentTimeMillis(),
+                                pausedAt = null,
+                            )
+                        )
                     }
+                }
+            }
+            TimerService.stop(context)
+            refresh()
+        }
+    }
+
+    /** 编辑历史记录：起止时间戳 + 备注。 */
+    fun updateEntry(entryId: String, startedAt: Long, endedAt: Long?, note: String?) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                entryDao.findBetween(Long.MIN_VALUE, Long.MAX_VALUE)
+                    .firstOrNull { it.id == entryId }
+                    ?.let {
+                        entryDao.save(
+                            it.copy(
+                                startedAt = startedAt,
+                                endedAt = endedAt,
+                                note = note?.takeIf { n -> n.isNotBlank() },
+                            )
+                        )
+                    }
+            }
+            refresh()
+        }
+    }
+
+    /** 更新活动（名称/颜色/每日目标分钟）。 */
+    fun updateActivity(activityId: String, name: String, colorArgb: Long, dailyGoalMin: Int) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                activityDao.findAll().firstOrNull { it.id == activityId }?.let {
+                    activityDao.save(
+                        it.copy(
+                            name = trimmed,
+                            colorArgb = colorArgb,
+                            dailyGoalMin = dailyGoalMin.coerceAtLeast(0),
+                        )
+                    )
                 }
             }
             refresh()

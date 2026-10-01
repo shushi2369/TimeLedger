@@ -83,7 +83,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
     val todayTotalMs = todayEntries.sumOf { it.entry.durationMs(nowMs) }
 
     var showAddActivity by remember { mutableStateOf(false) }
-    var deleteTarget by remember { mutableStateOf<TodayEntry?>(null) }
+    var editEntryTarget by remember { mutableStateOf<TodayEntry?>(null) }
     var editTarget by remember { mutableStateOf<TimeActivityEntity?>(null) }
 
     Column(
@@ -111,12 +111,39 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
             modifier = Modifier.padding(horizontal = 24.dp)
         )
 
+        // 每日目标达成率（设定了目标的活动才计入）
+        val goalActivities = activities.filter { it.dailyGoalMin > 0 }
+        if (goalActivities.isNotEmpty()) {
+            val goalMinTotal = goalActivities.sumOf { it.dailyGoalMin.toLong() }
+            val actualByActivity = todayEntries.groupBy { it.entry.activityId }
+                .mapValues { (_, list) -> list.sumOf { it.entry.durationMs(nowMs) } }
+            val achievedMin = goalActivities.sumOf { act ->
+                val actualMin = (actualByActivity[act.id] ?: 0L) / 60000
+                minOf(actualMin, act.dailyGoalMin.toLong())
+            }
+            val pct = (achievedMin * 100 / goalMinTotal).coerceAtMost(100)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "今日目标达成 $pct%",
+                style = UI.typo.c.style(
+                    fontWeight = FontWeight.Bold,
+                    color = UI.colors.primary
+                ),
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        }
+
         Spacer(Modifier.height(16.dp))
 
         if (runningEntry != null && runningActivity != null) {
             RunningCard(
                 activity = runningActivity,
                 elapsedMs = runningEntry.durationMs(nowMs),
+                paused = runningEntry.pausedAt != null,
+                onPauseResume = {
+                    if (runningEntry.pausedAt != null) viewModel.resumeTimer()
+                    else viewModel.pauseTimer()
+                },
                 onStop = viewModel::stopRunning
             )
             Spacer(Modifier.height(16.dp))
@@ -142,7 +169,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
             )
         } else {
             todayEntries.forEach { item ->
-                TodayEntryRow(item = item, onClick = { deleteTarget = item })
+                TodayEntryRow(item = item, onClick = { editEntryTarget = item })
             }
         }
 
@@ -179,8 +206,8 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
     editTarget?.let { target ->
         EditActivityDialog(
             activity = target,
-            onSave = { name, color ->
-                viewModel.renameActivity(target.id, name, color)
+            onSave = { name, color, goalMin ->
+                viewModel.updateActivity(target.id, name, color, goalMin)
                 editTarget = null
             },
             onDelete = {
@@ -191,24 +218,38 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
         )
     }
 
-    deleteTarget?.let { target ->
-        AlertDialog(
-            onDismissRequest = { deleteTarget = null },
-            title = { Text("删除这条时间记录？") },
-            text = {
-                Text(
-                    "${target.activityName} · ${formatDurationChinese(target.entry.durationMs(nowMs))}"
+    editEntryTarget?.let { target ->
+        EditEntryDialog(
+            item = target,
+            onSave = { startMs, endMs, note ->
+                viewModel.updateEntry(
+                    entryId = target.entry.id,
+                    startedAt = startMs,
+                    endedAt = endMs,
+                    note = note,
                 )
+                editEntryTarget = null
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteEntry(target.entry.id)
-                    deleteTarget = null
-                }) { Text("删除") }
+            onDelete = {
+                viewModel.deleteEntry(target.entry.id)
+                editEntryTarget = null
             },
-            dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("取消") }
-            }
+            onDismiss = { editEntryTarget = null }
+        )
+    }
+
+    editTarget?.let { target ->
+        EditActivityDialog(
+            activity = target,
+            onSave = { name, color, goalMin ->
+                viewModel.updateActivity(target.id, name, color, goalMin)
+                editTarget = null
+            },
+            onDelete = {
+                viewModel.deleteActivity(target.id)
+                editTarget = null
+            },
+            onDismiss = { editTarget = null }
         )
     }
 }
@@ -217,6 +258,8 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
 private fun RunningCard(
     activity: TimeActivityEntity,
     elapsedMs: Long,
+    paused: Boolean,
+    onPauseResume: () -> Unit,
     onStop: () -> Unit,
 ) {
     val accent = Color(activity.colorArgb)
@@ -234,26 +277,38 @@ private fun RunningCard(
             modifier = Modifier
                 .size(12.dp)
                 .clip(CircleShape)
-                .background(accent)
+                .background(if (paused) UI.colors.medium else accent)
         )
 
         Spacer(Modifier.width(12.dp))
 
         Column(Modifier.weight(1f)) {
             Text(
-                text = "${activity.name} · 计时中",
+                text = "${activity.name} · ${if (paused) "已暂停" else "计时中"}",
                 style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = formatStopwatch(elapsedMs),
-                style = UI.typo.nB1.style(fontWeight = FontWeight.ExtraBold, color = accent)
+                style = UI.typo.nB1.style(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (paused) UI.colors.gray else accent
+                )
             )
         }
 
         IvyCircleButton(
-            icon = UiR.drawable.ic_time_tracking_pause,
-            backgroundGradient = Gradient.solid(accent),
+            icon = if (paused) UiR.drawable.ic_time_tracking_play else UiR.drawable.ic_time_tracking_pause,
+            backgroundGradient = Gradient.solid(if (paused) UI.colors.gray else accent),
+            tint = White,
+            onClick = onPauseResume
+        )
+
+        Spacer(Modifier.width(10.dp))
+
+        IvyCircleButton(
+            icon = UiR.drawable.ic_popup_close,
+            backgroundGradient = Gradient.solid(UI.colors.pureInverse),
             tint = White,
             onClick = onStop
         )
@@ -430,6 +485,13 @@ private fun TodayEntryRow(item: TodayEntry, onClick: () -> Unit) {
                 text = "$start - $end",
                 style = UI.typo.c.style(color = UI.colors.pureInverse.copy(alpha = 0.5f))
             )
+            if (!item.entry.note.isNullOrBlank()) {
+                Text(
+                    text = item.entry.note,
+                    style = UI.typo.c.style(color = UI.colors.pureInverse.copy(alpha = 0.4f)),
+                    maxLines = 1
+                )
+            }
         }
 
         Text(
@@ -519,12 +581,13 @@ private fun AddActivityDialog(
 @Composable
 private fun EditActivityDialog(
     activity: TimeActivityEntity,
-    onSave: (String, Long) -> Unit,
+    onSave: (String, Long, Int) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var name by remember { mutableStateOf(activity.name) }
     var selectedColor by remember { mutableStateOf(activity.colorArgb) }
+    var dailyGoal by remember { mutableStateOf(if (activity.dailyGoalMin > 0) activity.dailyGoalMin.toString() else "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -541,13 +604,173 @@ private fun EditActivityDialog(
                 Spacer(Modifier.height(12.dp))
 
                 ColorPalette(selectedColor = selectedColor, onSelect = { selectedColor = it })
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = dailyGoal,
+                    onValueChange = { dailyGoal = it.filter { c -> c.isDigit() }.take(4) },
+                    placeholder = { Text("每日目标（分钟，留空不设目标）") },
+                    singleLine = true
+                )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(name, selectedColor) }) { Text("保存") }
+            TextButton(onClick = {
+                onSave(name, selectedColor, dailyGoal.toIntOrNull() ?: 0)
+            }) { Text("保存") }
         },
         dismissButton = {
             TextButton(onClick = onDelete) { Text("删除", color = Color(0xFFE53935)) }
+        }
+    )
+}
+
+/** 编辑历史记录：当日起止时间 + 备注（note 字段激活）。 */
+@Composable
+private fun EditEntryDialog(
+    item: TodayEntry,
+    onSave: (Long, Long?, String?) -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val cal = java.util.Calendar.getInstance()
+    fun setTime(base: Long, hour: Int, minute: Int): Long {
+        cal.timeInMillis = base
+        cal.set(java.util.Calendar.HOUR_OF_DAY, hour)
+        cal.set(java.util.Calendar.MINUTE, minute)
+        cal.set(java.util.Calendar.SECOND, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+
+    val running = item.entry.endedAt == null
+    var startMillis by remember { mutableStateOf(item.entry.startedAt) }
+    var endMillis by remember { mutableStateOf(item.entry.endedAt ?: System.currentTimeMillis()) }
+    var note by remember { mutableStateOf(item.entry.note.orEmpty()) }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
+
+    val fmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑记录 · ${item.activityName}") },
+        text = {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(UI.shapes.r4)
+                        .background(UI.colors.medium)
+                        .clickable(enabled = !running) { showStartPicker = true }
+                        .padding(vertical = 12.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("开始", style = UI.typo.b2.style())
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        formatTime(startMillis, fmt),
+                        style = UI.typo.nB2.style(fontWeight = FontWeight.Bold)
+                    )
+                }
+
+                if (!running) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(UI.shapes.r4)
+                            .background(UI.colors.medium)
+                            .clickable { showEndPicker = true }
+                            .padding(vertical = 12.dp, horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("结束", style = UI.typo.b2.style())
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            formatTime(endMillis, fmt),
+                            style = UI.typo.nB2.style(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+
+                if (running) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "计时中的记录只能修改开始时间和备注",
+                        style = UI.typo.c.style(color = UI.colors.gray)
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    placeholder = { Text("备注（这段做了什么）") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val validStart = if (!running && endMillis <= startMillis) {
+                    // 结束早于开始：把开始调到结束前一天的同一时刻？简单起见取结束前至少 1 分钟
+                    endMillis - 60_000
+                } else startMillis
+                onSave(validStart, if (running) null else endMillis, note)
+            }) { Text("保存") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDelete) { Text("删除", color = Color(0xFFE53935)) }
+        }
+    )
+
+    if (showStartPicker) {
+        TimePickerDialog(
+            initialMillis = startMillis,
+            onConfirm = { startMillis = setTime(startMillis, it.first, it.second); showStartPicker = false },
+            onDismiss = { showStartPicker = false }
+        )
+    }
+    if (showEndPicker) {
+        TimePickerDialog(
+            initialMillis = endMillis,
+            onConfirm = { endMillis = setTime(endMillis, it.first, it.second); showEndPicker = false },
+            onDismiss = { showEndPicker = false }
+        )
+    }
+}
+
+private fun formatTime(millis: Long, fmt: SimpleDateFormat): String = fmt.format(java.util.Date(millis))
+
+/** material3 TimePicker + AlertDialog 包装（24 小时制）。 */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    initialMillis: Long,
+    onConfirm: (Pair<Int, Int>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val cal = java.util.Calendar.getInstance()
+    cal.timeInMillis = initialMillis
+    val state = androidx.compose.material3.rememberTimePickerState(
+        initialHour = cal.get(java.util.Calendar.HOUR_OF_DAY),
+        initialMinute = cal.get(java.util.Calendar.MINUTE),
+        is24Hour = true,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择时间") },
+        text = {
+            androidx.compose.material3.TimePicker(state = state)
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour to state.minute) }) { Text("确定") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
         }
     )
 }

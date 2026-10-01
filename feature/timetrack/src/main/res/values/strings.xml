@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="time_tracking_notification_title">计时中</string>
+    <string name="time_tracking_channel_name">时间计时</string>
+</resources>
