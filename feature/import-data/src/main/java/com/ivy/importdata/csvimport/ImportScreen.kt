@@ -35,6 +35,20 @@ fun BoxWithConstraintsScope.ImportCSVScreen(screen: ImportScreen) {
     }
     val context = LocalContext.current
 
+    // 国内账单导入（支付宝/微信）：本地全屏流程，完成后回到来源选择
+    val domesticSourceState = androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<com.ivy.importdata.csvimport.domestic.DomesticSource?>(null)
+    }
+    val domesticSource = domesticSourceState.value
+
+    if (domesticSource != null) {
+        com.ivy.importdata.csvimport.domestic.DomesticImportUI(
+            source = domesticSource!!,
+            onFinish = { domesticSourceState.value = null }
+        )
+        return
+    }
+
     UI(
         screen = screen,
         importStep = importStep,
@@ -55,7 +69,8 @@ fun BoxWithConstraintsScope.ImportCSVScreen(screen: ImportScreen) {
                 screen = screen,
                 onboardingViewModel = onboardingViewModel
             )
-        }
+        },
+        onDomesticImport = { domesticSourceState.value = it }
     )
 }
 
@@ -73,6 +88,7 @@ private fun BoxWithConstraintsScope.UI(
     onUploadCSVFile: () -> Unit = {},
     onSkip: () -> Unit = {},
     onFinish: () -> Unit = {},
+    onDomesticImport: (com.ivy.importdata.csvimport.domestic.DomesticSource) -> Unit = {},
 ) {
     when (importStep) {
         ImportStep.IMPORT_FROM -> {
@@ -80,7 +96,8 @@ private fun BoxWithConstraintsScope.UI(
                 hasSkip = screen.launchedFromOnboarding,
                 launchedFromOnboarding = screen.launchedFromOnboarding,
                 onSkip = onSkip,
-                onImportFrom = onChooseImportType
+                onImportFrom = onChooseImportType,
+                onDomesticImport = onDomesticImport
             )
         }
 

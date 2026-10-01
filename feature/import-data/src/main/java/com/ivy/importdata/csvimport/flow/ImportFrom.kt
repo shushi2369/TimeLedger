@@ -45,6 +45,7 @@ fun BoxWithConstraintsScope.ImportFrom(
 
     onSkip: () -> Unit = {},
     onImportFrom: (ImportType) -> Unit = {},
+    onDomesticImport: (com.ivy.importdata.csvimport.domestic.DomesticSource) -> Unit = {},
 ) {
     val importTypes = ImportType.values()
 
@@ -83,6 +84,36 @@ fun BoxWithConstraintsScope.ImportFrom(
                         color = Color.White
                     )
                 )
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+
+        // 国内账单导入（支付宝/微信）：本地解析 CSV，订单号去重
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                com.ivy.wallet.ui.theme.components.IvyOutlinedButton(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    text = "支付宝账单",
+                    iconStart = null
+                ) {
+                    onDomesticImport(com.ivy.importdata.csvimport.domestic.DomesticSource.ALIPAY)
+                }
+                Spacer(Modifier.width(12.dp))
+                com.ivy.wallet.ui.theme.components.IvyOutlinedButton(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    text = "微信账单",
+                    iconStart = null
+                ) {
+                    onDomesticImport(com.ivy.importdata.csvimport.domestic.DomesticSource.WECHAT)
+                }
             }
             Spacer(Modifier.height(16.dp))
         }
