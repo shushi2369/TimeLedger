@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.model.TransactionType
@@ -73,7 +74,7 @@ fun ReportsBarChart(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(140.dp)
+                .height(120.dp)
         ) {
             val groupWidth = size.width / days.size
             val barWidth = minOf(groupWidth * 0.30f, 24.dp.toPx())
@@ -103,6 +104,27 @@ fun ReportsBarChart(
                         cornerRadius = corner
                     )
                 }
+            }
+        }
+
+        // x 轴日期标签：与柱组等宽对齐；天数多时隔 5 天标一个，首尾必标
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 2.dp)
+        ) {
+            days.forEachIndexed { index, entry ->
+                val show = days.size <= 10 ||
+                        index % 5 == 0 ||
+                        index == days.size - 1
+                Text(
+                    text = if (show) "${entry.first.dayOfMonth}" else "",
+                    style = UI.typo.c.style(
+                        color = UI.colors.pureInverse.copy(alpha = 0.4f)
+                    ).copy(fontSize = 9.sp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }

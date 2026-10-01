@@ -56,6 +56,7 @@ import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.GradientGreen
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
+import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.BalanceRowMini
@@ -294,7 +295,7 @@ fun CashFlowInfo(
                     com.ivy.legacy.utils.currencyDisplay(currency),
                 ),
                 style = UI.typo.nB2.style(
-                    color = if (cashflow < 0) Gray else Green,
+                    color = if (cashflow < 0) Red else Green,
                 ),
             )
 

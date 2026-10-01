@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -292,9 +293,10 @@ private fun PadKey(
     val canFinish = !state.saving &&
             state.evaluated != null &&
             kotlin.math.abs(state.evaluated) >= 0.01
+    val context = LocalContext.current
 
     val enabled = when {
-        isFinish -> canFinish
+        isFinish -> true
         isBackspace -> state.input.isNotEmpty()
         else -> true
     }
@@ -318,7 +320,18 @@ private fun PadKey(
                     "⌫" -> onBackspace?.invoke()
                     "+" -> onKey('+')
                     "−" -> onKey('-')
-                    "完成" -> onFinish?.invoke()
+                    "完成" -> {
+                        if (canFinish) {
+                            onFinish?.invoke()
+                        } else {
+                            // 无效金额也给反馈，不让点击像"卡死"
+                            android.widget.Toast.makeText(
+                                context,
+                                if (state.evaluated == null) "请先输入金额" else "金额太小啦",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                     else -> label.firstOrNull()?.let(onKey)
                 }
             },

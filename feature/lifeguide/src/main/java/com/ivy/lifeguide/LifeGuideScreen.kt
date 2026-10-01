@@ -241,6 +241,29 @@ private fun CatalogView(state: GuideUiState, vm: LifeGuideViewModel) {
                         content = LinkBlue
                     )
                 }
+
+                Spacer(Modifier.height(12.dp))
+
+                // 检索入口（改版时曾丢失，加回）
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(UI.colors.medium)
+                        .clickable { vm.openSearch() }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    com.ivy.wallet.ui.theme.components.IvyIcon(
+                        icon = R.drawable.ic_search,
+                        tint = UI.colors.gray
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "检索 $total 条建议…",
+                        style = UI.typo.b2.style(color = UI.colors.gray)
+                    )
+                }
             }
         }
 

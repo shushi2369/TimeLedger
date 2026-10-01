@@ -3,6 +3,7 @@ package com.ivy.timetrack
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +84,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
 
     var showAddActivity by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<TodayEntry?>(null) }
+    var editTarget by remember { mutableStateOf<TimeActivityEntity?>(null) }
 
     Column(
         modifier = Modifier
@@ -124,7 +126,8 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
             activities = activities,
             runningActivityId = runningEntry?.activityId,
             onToggle = viewModel::toggle,
-            onAddActivity = { showAddActivity = true }
+            onAddActivity = { showAddActivity = true },
+            onEditActivity = { editTarget = it }
         )
 
         Spacer(Modifier.height(24.dp))
@@ -170,6 +173,21 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
                 showAddActivity = false
             },
             onDismiss = { showAddActivity = false }
+        )
+    }
+
+    editTarget?.let { target ->
+        EditActivityDialog(
+            activity = target,
+            onSave = { name, color ->
+                viewModel.renameActivity(target.id, name, color)
+                editTarget = null
+            },
+            onDelete = {
+                viewModel.deleteActivity(target.id)
+                editTarget = null
+            },
+            onDismiss = { editTarget = null }
         )
     }
 
@@ -248,6 +266,7 @@ private fun ActivityGrid(
     runningActivityId: String?,
     onToggle: (String) -> Unit,
     onAddActivity: () -> Unit,
+    onEditActivity: (TimeActivityEntity) -> Unit,
 ) {
     val rows = activities.chunked(4).toMutableList()
     val lastRow = rows.lastOrNull()
@@ -265,6 +284,7 @@ private fun ActivityGrid(
                         activity = activity,
                         running = activity.id == runningActivityId,
                         onClick = { onToggle(activity.id) },
+                        onLongClick = { onEditActivity(activity) },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -282,11 +302,13 @@ private fun ActivityGrid(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ActivityCell(
     activity: TimeActivityEntity,
     running: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val accent = Color(activity.colorArgb)
@@ -296,7 +318,7 @@ private fun ActivityCell(
             .padding(4.dp)
             .clip(UI.shapes.r4)
             .background(if (running) accent.copy(alpha = 0.12f) else Color.Transparent)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -479,23 +501,7 @@ private fun AddActivityDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                // 8 色分两行，避免单行挤压变形
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PRESET_COLORS.chunked(4).forEach { rowColors ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            rowColors.forEach { color ->
-                                ColorDot(
-                                    color = color,
-                                    selected = color == selectedColor,
-                                    onClick = { selectedColor = color }
-                                )
-                            }
-                        }
-                    }
-                }
+                ColorPalette(selectedColor = selectedColor, onSelect = { selectedColor = it })
             }
         },
         confirmButton = {
@@ -508,6 +514,63 @@ private fun AddActivityDialog(
             TextButton(onClick = onDismiss) { Text("取消") }
         }
     )
+}
+
+@Composable
+private fun EditActivityDialog(
+    activity: TimeActivityEntity,
+    onSave: (String, Long) -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf(activity.name) }
+    var selectedColor by remember { mutableStateOf(activity.colorArgb) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑活动") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = { Text("活动名称") },
+                    singleLine = true
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                ColorPalette(selectedColor = selectedColor, onSelect = { selectedColor = it })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(name, selectedColor) }) { Text("保存") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDelete) { Text("删除", color = Color(0xFFE53935)) }
+        }
+    )
+}
+
+@Composable
+private fun ColorPalette(selectedColor: Long, onSelect: (Long) -> Unit) {
+    // 8 色分两行，避免单行挤压变形
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        PRESET_COLORS.chunked(4).forEach { rowColors ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                rowColors.forEach { color ->
+                    ColorDot(
+                        color = color,
+                        selected = color == selectedColor,
+                        onClick = { onSelect(color) }
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

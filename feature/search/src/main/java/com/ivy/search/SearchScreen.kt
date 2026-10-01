@@ -82,10 +82,15 @@ private fun SearchUi(
 
         Spacer(Modifier.height(16.dp))
         val emptyStateTitle = stringResource(R.string.no_transactions)
-        val emptyStateText = stringResource(
-            R.string.no_transactions_for_query,
-            searchQueryTextFieldValue.text
-        )
+        val emptyStateText = if (searchQueryTextFieldValue.text.isBlank()) {
+            // 空 query 别报"无结果"，引导输入
+            "输入关键词开始搜索"
+        } else {
+            stringResource(
+                R.string.no_transactions_for_query,
+                searchQueryTextFieldValue.text
+            )
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState
