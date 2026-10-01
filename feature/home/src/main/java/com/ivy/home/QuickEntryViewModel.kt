@@ -28,6 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.abs
@@ -99,15 +101,15 @@ class QuickEntryViewModel @Inject constructor(
                 input = cur + "."
             }
 
-            ch == '+' -> {
-                if (cur.isEmpty() || cur.last() in OPERATORS || cur.last() == '.') return
-                input = cur + "+"
-            }
-
             ch == '-' -> {
                 // 开头的负号 = 记收入；跟在数字后 = 减法
                 if (cur.isEmpty()) input = "-"
                 else if (cur.last().isDigit()) input = cur + "-"
+            }
+
+            ch in "+×÷" -> {
+                if (cur.isEmpty() || cur.last() in OPERATORS || cur.last() == '.') return
+                input = cur + ch
             }
         }
     }
@@ -126,7 +128,7 @@ class QuickEntryViewModel @Inject constructor(
 
     fun finish(onDone: () -> Unit) {
         if (saving) return
-        val result = evaluateExpression(input.trimEnd('+', '-', '.')) ?: return
+        val result = evaluateExpression(input.trimEnd('+', '-', '×', '÷', '.')) ?: return
         val amount = abs(result)
         if (amount < 0.01) return
 
@@ -142,7 +144,7 @@ class QuickEntryViewModel @Inject constructor(
                     val legacy = Transaction(
                         accountId = account.id,
                         type = if (result >= 0) TransactionType.EXPENSE else TransactionType.INCOME,
-                        amount = amount.toBigDecimal(),
+                        amount = java.math.BigDecimal.valueOf(amount),
                         categoryId = selectedCategoryId,
                         title = note.ifBlank { null },
                         dateTime = with(timeConverter) { timeNowLocal().toUTC() },
@@ -180,29 +182,76 @@ class QuickEntryViewModel @Inject constructor(
 
     companion object {
         private const val MAX_INPUT_LENGTH = 24
-        private val OPERATORS = setOf('+', '-')
+        private val OPERATORS = setOf('+', '-', '×', '÷')
+        private val NUMBER = Regex("\\d+(?:\\.\\d*)?|\\.\\d+")
 
         /**
-         * 求值 +/− 连算表达式（从左到右），如 "12+8-3.5" → 16.5、"-5-3" → -8。
-         * 输入不合法（缺口、非法字符）返回 null。
+         * 求值四则运算表达式，运算优先级：先 ×÷ 后 +−；
+         * 结果四舍五入精确到两位小数（HALF_UP）。如 "12+3×4" → 24.00、"10÷3" → 3.33、"-5-3" → -8.00。
+         * 输入不合法（缺口、非法字符、除以零）返回 null。开头的负号 = 负数（记收入）。
          */
         fun evaluateExpression(input: String): Double? {
             val cleaned = input.trim()
             if (cleaned.isEmpty()) return null
 
-            val token = Regex("([+-]?)(\\d+(?:\\.\\d*)?|\\.\\d+)")
-            var index = 0
-            var sum = 0.0
-            var matchedAny = false
-            for (m in token.findAll(cleaned)) {
-                if (m.range.first != index) return null
-                val sign = if (m.groupValues[1] == "-") -1.0 else 1.0
-                sum += sign * (m.groupValues[2].toDoubleOrNull() ?: return null)
-                index = m.range.last + 1
-                matchedAny = true
+            // ① tokenize：[可选首位负号] 数字 (运算符 数字)*
+            var i = 0
+            var negative = false
+            when (cleaned.first()) {
+                '-' -> { negative = true; i = 1 }
+                '+' -> i = 1
             }
-            if (!matchedAny || index != cleaned.length) return null
-            return sum
+            val first = NUMBER.find(cleaned, i) ?: return null
+            if (first.range.first != i) return null
+            val tokens = ArrayList<Any>(8) // BigDecimal | Char
+            tokens.add(BigDecimal(first.value))
+            i = first.range.last + 1
+            while (i < cleaned.length) {
+                val op = cleaned[i]
+                if (op !in "+-×÷") return null
+                tokens.add(op)
+                i++
+                val m = NUMBER.find(cleaned, i) ?: return null
+                if (m.range.first != i) return null
+                tokens.add(BigDecimal(m.value))
+                i = m.range.last + 1
+            }
+
+            // ② 第一遍：× ÷（除以零 → 非法）
+            val stack = ArrayList<Any>(8)
+            stack.add(tokens[0])
+            var k = 1
+            while (k < tokens.size) {
+                val op = tokens[k] as Char
+                val num = tokens[k + 1] as BigDecimal
+                if (op == '×' || op == '÷') {
+                    val prev = stack.removeAt(stack.size - 1) as BigDecimal
+                    val r = if (op == '×') {
+                        prev.multiply(num)
+                    } else {
+                        if (num.signum() == 0) return null
+                        prev.divide(num, 10, RoundingMode.HALF_UP)
+                    }
+                    stack.add(r)
+                } else {
+                    stack.add(op)
+                    stack.add(num)
+                }
+                k += 2
+            }
+
+            // ③ 第二遍：+ −
+            var acc = stack[0] as BigDecimal
+            k = 1
+            while (k < stack.size) {
+                val op = stack[k] as Char
+                val num = stack[k + 1] as BigDecimal
+                acc = if (op == '+') acc.add(num) else acc.subtract(num)
+                k += 2
+            }
+
+            if (negative) acc = acc.negate()
+            return acc.setScale(2, RoundingMode.HALF_UP).toDouble()
         }
     }
 }

@@ -176,24 +176,31 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                 onClear = viewModel::onClear
             )
             PadRow(
-                keys = listOf("4", "5", "6", "+"),
+                keys = listOf("4", "5", "6", "÷"),
                 state = state,
                 onKey = viewModel::onKey,
                 onClear = viewModel::onClear
             )
             PadRow(
-                keys = listOf("1", "2", "3", "−"),
+                keys = listOf("1", "2", "3", "×"),
                 state = state,
                 onKey = viewModel::onKey,
                 onClear = viewModel::onClear
             )
             PadRow(
-                keys = listOf(".", "0", "⌫", "完成"),
+                keys = listOf("+", "−", "⌫", "完成"),
                 state = state,
                 onKey = viewModel::onKey,
                 onClear = viewModel::onClear,
                 onBackspace = viewModel::onBackspace,
                 onFinish = { viewModel.finish { nav.back() } }
+            )
+            PadRow(
+                keys = listOf(".", "0"),
+                weights = listOf(2f, 2f),
+                state = state,
+                onKey = viewModel::onKey,
+                onClear = viewModel::onClear
             )
         }
     }
@@ -256,14 +263,15 @@ private fun PadRow(
     onClear: () -> Unit,
     onBackspace: (() -> Unit)? = null,
     onFinish: (() -> Unit)? = null,
+    weights: List<Float> = List(keys.size) { 1f },
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        keys.forEach { key ->
+        keys.forEachIndexed { index, key ->
             PadKey(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(weights.getOrElse(index) { 1f }),
                 label = key,
                 state = state,
                 onKey = onKey,
