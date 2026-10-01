@@ -94,9 +94,9 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
     ) {
         Spacer(Modifier.height(24.dp))
 
-        Text(
-            text = "时间",
-            style = UI.typo.b1.style(fontWeight = FontWeight.ExtraBold),
+        com.ivy.legacy.arkui.ArkBilingualTitle(
+            cn = "时间",
+            en = "TIME",
             modifier = Modifier.padding(horizontal = 24.dp)
         )
 
@@ -104,7 +104,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
 
         Text(
             text = "今日 ${formatDurationChinese(todayTotalMs)}",
-            style = UI.typo.b2.style(
+            style = UI.typo.nB2.style(
                 fontWeight = FontWeight.Bold,
                 color = UI.colors.pureInverse.copy(alpha = 0.6f)
             ),
@@ -247,7 +247,7 @@ private fun RunningCard(
             Spacer(Modifier.height(2.dp))
             Text(
                 text = formatStopwatch(elapsedMs),
-                style = UI.typo.b1.style(fontWeight = FontWeight.ExtraBold, color = accent)
+                style = UI.typo.nB1.style(fontWeight = FontWeight.ExtraBold, color = accent)
             )
         }
 

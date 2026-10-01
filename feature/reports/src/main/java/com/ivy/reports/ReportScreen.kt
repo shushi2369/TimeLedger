@@ -146,14 +146,10 @@ private fun BoxWithConstraintsScope.UI(
         }
 
         item {
-            Text(
-                modifier = Modifier.padding(
-                    start = 32.dp
-                ),
-                text = stringResource(R.string.reports),
-                style = UI.typo.h2.style(
-                    fontWeight = FontWeight.ExtraBold
-                )
+            com.ivy.legacy.arkui.ArkBilingualTitle(
+                cn = stringResource(R.string.reports),
+                en = "REPORTS",
+                modifier = Modifier.padding(start = 32.dp)
             )
 
             Spacer(Modifier.height(8.dp))

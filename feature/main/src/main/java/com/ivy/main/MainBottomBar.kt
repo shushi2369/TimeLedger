@@ -76,9 +76,6 @@ import kotlin.math.roundToInt
 val TRN_BUTTON_CLICK_AREA_HEIGHT = 150.dp
 val FAB_BUTTON_SIZE = 56.dp
 
-/** 时间 Tab 的选中色，区别于主页 Ivy 绿/报表蓝/指南橙/账户绿。 */
-private val TimePurple = Color(0xFFC34CFF)
-
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun BoxWithConstraintsScope.BottomBar(
@@ -134,7 +131,7 @@ fun BoxWithConstraintsScope.BottomBar(
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 左侧两个 Tab
+        // 左侧两个 Tab（方舟档案风：选中色统一方舟蓝）
         Tab(
             icon = R.drawable.ic_home,
             name = stringResource(R.string.home),
@@ -148,7 +145,7 @@ fun BoxWithConstraintsScope.BottomBar(
             icon = R.drawable.ic_time,
             name = "时间",
             selected = tab == MainTab.TIME,
-            selectedColor = TimePurple
+            selectedColor = Ivy
         ) {
             selectTab(MainTab.TIME)
         }
@@ -161,7 +158,7 @@ fun BoxWithConstraintsScope.BottomBar(
             icon = R.drawable.ic_custom_education_m,
             name = "指南",
             selected = tab == MainTab.LIFEGUIDE,
-            selectedColor = Orange
+            selectedColor = Ivy
         ) {
             selectTab(MainTab.LIFEGUIDE)
         }
@@ -170,7 +167,7 @@ fun BoxWithConstraintsScope.BottomBar(
             icon = R.drawable.ic_accounts,
             name = stringResource(R.string.accounts),
             selected = tab == MainTab.ACCOUNTS,
-            selectedColor = Green
+            selectedColor = Ivy
         ) {
             selectTab(MainTab.ACCOUNTS)
         }

@@ -115,15 +115,10 @@ private fun BoxWithConstraintsScope.UI(
             ) {
                 Spacer(Modifier.width(24.dp))
 
-                Column {
-                    Text(
-                        text = stringResource(R.string.accounts),
-                        style = UI.typo.b1.style(
-                            color = UI.colors.pureInverse,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    )
-                }
+                com.ivy.legacy.arkui.ArkBilingualTitle(
+                    cn = stringResource(R.string.accounts),
+                    en = "ASSETS"
+                )
 
                 Spacer(Modifier.weight(1f))
 

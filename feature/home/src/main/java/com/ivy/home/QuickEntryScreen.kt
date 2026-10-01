@@ -138,7 +138,7 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                     text = "将记为：$direction ${
                         DecimalFormat("#,##0.00").format(kotlin.math.abs(evaluated))
                     } ${currencyDisplay(state.baseCurrency)}",
-                    style = UI.typo.c.style(
+                    style = UI.typo.nC.style(
                         color = if (evaluated >= 0) UI.colors.pureInverse else UI.colors.green
                     )
                 )

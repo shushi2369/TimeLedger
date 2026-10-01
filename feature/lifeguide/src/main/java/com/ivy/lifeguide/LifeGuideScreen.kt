@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.em
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -221,11 +222,28 @@ private fun CatalogView(state: GuideUiState, vm: LifeGuideViewModel) {
         // Hero 区
         ReaderContentColumn {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
-                Text(
-                    text = "人生指南",
-                    style = UI.typo.b1.style(fontWeight = FontWeight.ExtraBold)
-                        .copy(fontSize = 30.sp, lineHeight = 36.sp)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .width(4.dp)
+                            .height(24.dp)
+                            .background(UI.colors.primary)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "人生指南",
+                        style = UI.typo.b1.style(fontWeight = FontWeight.ExtraBold)
+                            .copy(fontSize = 30.sp, lineHeight = 36.sp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "FIELD MANUAL",
+                        style = UI.typo.c.style(
+                            fontWeight = FontWeight.Bold,
+                            color = UI.colors.gray
+                        ).copy(fontSize = 12.sp, letterSpacing = 0.08.em)
+                    )
+                }
                 Spacer(Modifier.height(6.dp))
                 Text(
                     text = "按性价比排序的循证生活建议 · 来自 HowToLiveBetter（公有领域）",

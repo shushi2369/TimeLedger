@@ -9,17 +9,17 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val White = Color(0xFFFAFAFA)
+val White = Color(0xFFFFFFFF)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Black = Color(0xFF111114)
+val Black = Color(0xFF1D1F20)
 
 // Primary
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Ivy = Color(0xFF6B4DFF)
+val Ivy = Color(0xFF0098DC)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Purple = Color(0xFF6B4DFF)
+val Purple = Color(0xFF0098DC)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Purple1 = Color(0xFFC34CFF)
@@ -28,7 +28,7 @@ val Purple1 = Color(0xFFC34CFF)
 val Purple2 = Color(0xFFFF4CFF)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Blue = Color(0xFF4CC3FF)
+val Blue = Color(0xFF0098DC)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Blue2 = Color(0xFF45E6E6)
@@ -37,7 +37,7 @@ val Blue2 = Color(0xFF45E6E6)
 val Blue3 = Color(0xFF457BE6)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Green = Color(0xFF14CC9E)
+val Green = Color(0xFF2FAC78)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Green2 = Color(0xFF45E67B)
@@ -49,10 +49,10 @@ val Green3 = Color(0xFF96E645)
 val Green4 = Color(0xFFC7E62E)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Yellow = Color(0xFFFFEE33)
+val Yellow = Color(0xFFFFD800)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Orange = Color(0xFFF29F30)
+val Orange = Color(0xFFF49800)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Orange2 = Color(0xFFE67B45)
@@ -61,7 +61,7 @@ val Orange2 = Color(0xFFE67B45)
 val Orange3 = Color(0xFFFFC34C)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Red = Color(0xFFFF4060)
+val Red = Color(0xFFD83C3C)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Red2 = Color(0xFFE62E2E)
@@ -71,7 +71,7 @@ val Red3 = Color(0xFFFF4CA6)
 
 // Light
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val IvyLight = Color(0xFFD5CCFF)
+val IvyLight = Color(0xFF5DDCFF)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Purple1Light = Color(0xFFEECCFF)
@@ -123,7 +123,7 @@ val Red3Light = Color(0xFFFFCCE6)
 
 // Dark
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val IvyDark = Color(0xFF352680)
+val IvyDark = Color(0xFF0075A9)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Purple1Dark = Color(0xFF622680)
@@ -178,19 +178,19 @@ val Red3Dark = Color(0xFF802653)
 val TrueBlack = Color(0xFF000000)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val MediumBlack = Color(0xFF2B2C2D)
+val MediumBlack = Color(0xFF232425)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val Gray = Color(0xFF939199)
+val Gray = Color(0xFF8D8D8D)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val MediumWhite = Color(0xFFEFEEF0)
+val MediumWhite = Color(0xFFEBEBEB)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 val Transparent = Color(0x00000000)
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
-val GradientGreen = Gradient(Green, Color(0xFF49F2C8))
+val GradientGreen = Gradient(Green, Color(0xFF4FFAA5))
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Immutable

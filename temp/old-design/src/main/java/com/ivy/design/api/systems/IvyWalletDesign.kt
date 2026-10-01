@@ -41,6 +41,16 @@ abstract class IvyWalletDesign : IvyDesign {
             Font(R.font.raleway_extrabold, FontWeight.ExtraBold),
         )
 
+        // 方舟档案风：数字/拉丁展示字 Novecento Sans Wide（明日方舟 UI 同款，自 shared/ui/core 打包）
+        val novecento = FontFamily(
+            Font(R.font.novecentosanswide_medium, FontWeight.Normal),
+            Font(R.font.novecentosanswide_medium, FontWeight.Medium),
+            Font(R.font.novecentosanswide_demibold, FontWeight.SemiBold),
+            Font(R.font.novecentosanswide_bold, FontWeight.Bold),
+            Font(R.font.novecentosanswide_ultrabold, FontWeight.ExtraBold),
+            Font(R.font.novecentosanswide_ultrabold, FontWeight.Black),
+        )
+
         val h1 = 40.sp
         val h2 = 32.sp
         val b1 = 20.sp
@@ -80,31 +90,31 @@ abstract class IvyWalletDesign : IvyDesign {
             )
 
             override val nH1 = TextStyle(
-                fontFamily = openSans,
+                fontFamily = novecento,
                 fontWeight = FontWeight.Bold,
                 fontSize = h1,
                 baselineShift = BaselineShift(OPEN_SANS_BASELINE_SHIFT),
             )
             override val nH2 = TextStyle(
-                fontFamily = openSans,
+                fontFamily = novecento,
                 fontWeight = FontWeight.Bold,
                 fontSize = h2,
                 baselineShift = BaselineShift(OPEN_SANS_BASELINE_SHIFT),
             )
             override val nB1 = TextStyle(
-                fontFamily = openSans,
+                fontFamily = novecento,
                 fontWeight = FontWeight.Bold,
                 fontSize = b1,
                 baselineShift = BaselineShift(OPEN_SANS_BASELINE_SHIFT),
             )
             override val nB2 = TextStyle(
-                fontFamily = openSans,
+                fontFamily = novecento,
                 fontWeight = FontWeight.Normal,
                 fontSize = b2,
                 baselineShift = BaselineShift(OPEN_SANS_BASELINE_SHIFT),
             )
             override val nC = TextStyle(
-                fontFamily = openSans,
+                fontFamily = novecento,
                 fontWeight = FontWeight.Bold,
                 fontSize = c,
                 baselineShift = BaselineShift(OPEN_SANS_BASELINE_SHIFT),
@@ -197,22 +207,23 @@ abstract class IvyWalletDesign : IvyDesign {
 
     @Deprecated("Old design system. Use `:ivy-design` and Material3")
     override fun shapes(): IvyShapes {
+        // 方舟档案风：直角至上（PRTS Design --ak-radius: 0 / --ak-radius-sm: 2），仅保留 2px 防锯齿
         return object : IvyShapes() {
-            override val r1 = RoundedCornerShape(32.dp)
-            override val r1Top = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-            override val r1Bot = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+            override val r1 = RoundedCornerShape(2.dp)
+            override val r1Top = RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)
+            override val r1Bot = RoundedCornerShape(bottomStart = 2.dp, bottomEnd = 2.dp)
 
-            override val r2 = RoundedCornerShape(24.dp)
-            override val r2Top = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-            override val r2Bot = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
+            override val r2 = RoundedCornerShape(2.dp)
+            override val r2Top = RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)
+            override val r2Bot = RoundedCornerShape(bottomStart = 2.dp, bottomEnd = 2.dp)
 
-            override val r3 = RoundedCornerShape(20.dp)
-            override val r3Top = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-            override val r3Bot = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
+            override val r3 = RoundedCornerShape(2.dp)
+            override val r3Top = RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)
+            override val r3Bot = RoundedCornerShape(bottomStart = 2.dp, bottomEnd = 2.dp)
 
-            override val r4 = RoundedCornerShape(16.dp)
-            override val r4Top = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-            override val r4Bot = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
+            override val r4 = RoundedCornerShape(2.dp)
+            override val r4Top = RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp)
+            override val r4Bot = RoundedCornerShape(bottomStart = 2.dp, bottomEnd = 2.dp)
         }
     }
 }
