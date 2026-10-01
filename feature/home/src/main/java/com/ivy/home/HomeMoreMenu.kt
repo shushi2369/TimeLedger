@@ -314,7 +314,7 @@ private fun ColumnScope.OpenSource() {
             .clickable {
                 openUrl(
                     uriHandler = uriHandler,
-                    url = Constants.URL_IVY_WALLET_REPO
+                    url = Constants.URL_TIMELEDGER_REPO
                 )
             }
             .padding(vertical = 12.dp),
@@ -341,7 +341,7 @@ private fun ColumnScope.OpenSource() {
             Spacer(Modifier.height(4.dp))
 
             Text(
-                text = Constants.URL_IVY_WALLET_REPO,
+                text = Constants.URL_TIMELEDGER_REPO,
                 style = UI.typo.c.style(
                     fontWeight = FontWeight.ExtraBold,
                     color = Blue
@@ -501,15 +501,6 @@ private fun QuickAccess(
 //        }
 
             val rootScreen = rootScreen()
-            MoreMenuButton(
-                icon = R.drawable.home_more_menu_share,
-                label = stringResource(R.string.share_ivy)
-            ) {
-                rootScreen.shareIvyWallet()
-            }
-
-            Spacer(Modifier.weight(1f))
-
             MoreMenuButton(
                 icon = R.drawable.home_more_menu_reports,
                 label = stringResource(R.string.reports),
