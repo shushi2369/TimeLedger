@@ -55,7 +55,6 @@ import com.ivy.legacy.utils.springBounceFast
 import com.ivy.legacy.utils.toDensityDp
 import com.ivy.legacy.utils.toDensityPx
 import com.ivy.ui.R
-import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.GradientGreen
 import com.ivy.wallet.ui.theme.GradientIvy
@@ -135,7 +134,7 @@ fun BoxWithConstraintsScope.BottomBar(
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 左侧三个 Tab
+        // 左侧两个 Tab
         Tab(
             icon = R.drawable.ic_home,
             name = stringResource(R.string.home),
@@ -143,15 +142,6 @@ fun BoxWithConstraintsScope.BottomBar(
             selectedColor = Ivy
         ) {
             selectTab(MainTab.HOME)
-        }
-
-        Tab(
-            icon = R.drawable.ic_custom_stats_m,
-            name = "报表",
-            selected = tab == MainTab.REPORTS,
-            selectedColor = Blue
-        ) {
-            selectTab(MainTab.REPORTS)
         }
 
         Tab(
@@ -163,7 +153,7 @@ fun BoxWithConstraintsScope.BottomBar(
             selectTab(MainTab.TIME)
         }
 
-        // 中间留出记账按钮的位置，左右 Tab 总体保持对称
+        // 中间留出记账按钮的位置，左右各两个 Tab 形成对称
         Spacer(Modifier.width(FAB_BUTTON_SIZE))
 
         // 右侧两个 Tab
@@ -200,8 +190,7 @@ fun BoxWithConstraintsScope.BottomBar(
     }
 
     // ------------------------------------ BUTTONS--------------------------------------------------
-    // 6 等分槽位（5 Tab + FAB 空槽），FAB 悬浮在第 4 槽中心，避免遮挡相邻 Tab 图标
-    val fabStartX = ivyContext.screenWidth * 7 / 12 - FAB_BUTTON_SIZE.toDensityPx() / 2
+    val fabStartX = ivyContext.screenWidth / 2 - FAB_BUTTON_SIZE.toDensityPx() / 2
     val fabStartY = ivyContext.screenHeight - navigationBarInset() -
             30.dp.toDensityPx() - FAB_BUTTON_SIZE.toDensityPx()
 

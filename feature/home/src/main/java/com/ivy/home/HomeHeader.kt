@@ -49,6 +49,7 @@ import com.ivy.legacy.utils.rememberSwipeListenerState
 import com.ivy.legacy.utils.springBounce
 import com.ivy.legacy.utils.verticalSwipeListener
 import com.ivy.navigation.PieChartStatisticScreen
+import com.ivy.navigation.ReportScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Gradient
@@ -261,6 +262,20 @@ fun CashFlowInfo(
             hideIncome = hideIncome,
             onHiddenIncomeClick = onHiddenIncomeClick
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val reportNav = navigation()
+        IvyOutlinedButton(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth(),
+            iconStart = R.drawable.ic_custom_stats_m,
+            text = "报表分析",
+            solidBackground = true,
+        ) {
+            reportNav.navigateTo(ReportScreen)
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
