@@ -20,9 +20,20 @@ import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -137,7 +148,31 @@ class RootActivity : AppCompatActivity(), RootScreen {
                             timeProvider = timeProvider,
                             timeFormatter = timeFormatter,
                         ) {
-                            IvyNavGraph(screen)
+                            Box {
+                                this@IvyUI.IvyNavGraph(screen)
+
+                                // 全局 Snackbar（如快速记账的「撤销」），悬浮于所有屏幕之上
+                                val snackbarHostState = remember { SnackbarHostState() }
+                                LaunchedEffect(Unit) {
+                                    ivyContext.snackbarEvents.collect { data ->
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = data.message,
+                                            actionLabel = data.actionLabel,
+                                            duration = SnackbarDuration.Long,
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            data.onAction?.invoke()
+                                        }
+                                    }
+                                }
+                                SnackbarHost(
+                                    hostState = snackbarHostState,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .navigationBarsPadding()
+                                        .padding(bottom = 96.dp),
+                                )
+                            }
                         }
                     }
                 }

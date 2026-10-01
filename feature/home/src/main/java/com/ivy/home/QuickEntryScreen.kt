@@ -1,6 +1,8 @@
 package com.ivy.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -158,6 +160,35 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                 placeholder = { Text("备注（可选）", style = UI.typo.b2) },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // 标签多选（方舟风 chips，横滚）
+            if (state.availableTags.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    state.availableTags.forEach { tag ->
+                        val selected = tag.id.value in state.selectedTagIds
+                        Text(
+                            text = "#${tag.name.value}",
+                            style = UI.typo.c.style(
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selected) Color.White else UI.colors.pureInverse
+                            ),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(
+                                    if (selected) UI.colors.primary else UI.colors.medium
+                                )
+                                .clickable { viewModel.toggleTag(tag.id.value) }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(Modifier.height(8.dp))

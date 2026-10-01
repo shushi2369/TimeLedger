@@ -12,6 +12,9 @@ import com.ivy.legacy.datamodel.Account
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -150,6 +153,37 @@ class IvyWalletCtx @Inject constructor() : IvyContext() {
 
     @Deprecated("Legacy code. Don't use it, please.")
     lateinit var openFile: (onOpened: (Uri) -> Unit) -> Unit
+
+    // Snackbar（全局，跨屏幕）----------------------------------------------------------------------
+    data class IvySnackbar(
+        val message: String,
+        val actionLabel: String? = null,
+        val onAction: (() -> Unit)? = null,
+    )
+
+    private val _snackbarEvents = kotlinx.coroutines.flow.MutableSharedFlow<IvySnackbar>(
+        extraBufferCapacity = 4
+    )
+    val snackbarEvents = _snackbarEvents.asSharedFlow()
+
+    /**
+     * 全局 Snackbar：任意屏幕发出，根布局统一展示。
+     * onAction 在用户点击动作时回调（发出方页面可能已销毁，请勿捕获其 ViewModel/作用域）。
+     */
+    fun showSnackbar(
+        message: String,
+        actionLabel: String? = null,
+        onAction: (() -> Unit)? = null,
+    ) {
+        _snackbarEvents.tryEmit(IvySnackbar(message, actionLabel, onAction))
+    }
+
+    // 数据变更信号：后台动作（如撤销）改库后，观察者（主页等）据此刷新
+    private val _dataVersion = kotlinx.coroutines.flow.MutableStateFlow(0L)
+    val dataVersion = _dataVersion.asStateFlow()
+    fun notifyDataChanged() {
+        _dataVersion.value += 1
+    }
 
     // Testing --------------------------------------------------------------------------------------
     @Deprecated("Legacy code. Don't use it, please.")

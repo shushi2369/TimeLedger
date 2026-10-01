@@ -139,6 +139,13 @@ class HomeViewModel @Inject constructor(
             start()
         }
 
+        // 后台数据变更（如快速记账的撤销）时响应式刷新
+        LaunchedEffect(Unit) {
+            ivyContext.dataVersion.collect {
+                reload()
+            }
+        }
+
         return HomeState(
             theme = getTheme(),
             name = getName(),

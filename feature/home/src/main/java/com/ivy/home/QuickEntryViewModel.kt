@@ -13,10 +13,15 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.model.Category
+import com.ivy.data.model.Tag
+import com.ivy.data.model.TagId
+import com.ivy.data.model.primitive.AssociationId
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
+import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.datamodel.toEntity
@@ -43,6 +48,8 @@ import kotlin.math.abs
 class QuickEntryViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
     private val accountRepository: AccountRepository,
+    private val tagRepository: TagRepository,
+    private val ivyWalletCtx: IvyWalletCtx,
     private val accountDao: AccountDao,
     private val settingsDao: SettingsDao,
     private val currencyRepository: com.ivy.data.repository.CurrencyRepository,
@@ -57,6 +64,8 @@ class QuickEntryViewModel @Inject constructor(
     private var note by mutableStateOf("")
     private var baseCurrency by mutableStateOf("CNY")
     private var saving by mutableStateOf(false)
+    private var availableTags by mutableStateOf<List<Tag>>(emptyList())
+    private var selectedTagIds by mutableStateOf<Set<UUID>>(emptySet())
 
     init {
         viewModelScope.launch {
@@ -67,7 +76,12 @@ class QuickEntryViewModel @Inject constructor(
             }
             baseCurrency = currency
             categories = loadedCategories
+            availableTags = runCatching { tagRepository.findAll() }.getOrDefault(emptyList())
         }
+    }
+
+    fun toggleTag(id: UUID) {
+        selectedTagIds = if (id in selectedTagIds) selectedTagIds - id else selectedTagIds + id
     }
 
     @Composable
@@ -80,6 +94,8 @@ class QuickEntryViewModel @Inject constructor(
             note = note,
             baseCurrency = baseCurrency,
             saving = saving,
+            availableTags = availableTags,
+            selectedTagIds = selectedTagIds,
         )
     }
 
@@ -133,7 +149,9 @@ class QuickEntryViewModel @Inject constructor(
         if (amount < 0.01) return
 
         saving = true
+        val tagIds = selectedTagIds
         viewModelScope.launch {
+            var savedTransactionId: UUID? = null
             try {
                 withContext(Dispatchers.IO) {
                     val account = accountDao.findAll()
@@ -152,9 +170,46 @@ class QuickEntryViewModel @Inject constructor(
                     with(transactionMapper) {
                         legacy.toEntity().toDomain().getOrNull()?.let {
                             transactionRepository.save(it)
+                            savedTransactionId = it.id.value
                         }
                     }
                 }
+
+                // 标签关联落库（tags 存 TagAssociation 表，与交易本体分离）
+                val savedId = savedTransactionId
+                if (savedId != null && tagIds.isNotEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        tagIds.forEach { tagId ->
+                            runCatching {
+                                tagRepository.associateTagToEntity(
+                                    associationId = AssociationId(savedId),
+                                    tagId = TagId(tagId),
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 全局 Snackbar：主页可见，支持撤销（闭包只捕获单例仓库，不依赖本 VM 生命周期）
+                val direction = if (result >= 0) "支出" else "收入"
+                val amountText = java.text.DecimalFormat("#,##0.00").format(amount)
+                savedId?.let { id ->
+                    ivyWalletCtx.showSnackbar(
+                        message = "已记录 $direction $amountText 元",
+                        actionLabel = "撤销",
+                        onAction = {
+                            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                runCatching {
+                                    transactionRepository.deleteById(
+                                        com.ivy.data.model.TransactionId(id)
+                                    )
+                                    ivyWalletCtx.notifyDataChanged()
+                                }
+                            }
+                        }
+                    )
+                }
+
                 onDone()
             } finally {
                 saving = false
@@ -162,6 +217,7 @@ class QuickEntryViewModel @Inject constructor(
                 input = ""
                 note = ""
                 selectedCategoryId = null
+                selectedTagIds = emptySet()
             }
         }
     }
@@ -264,4 +320,6 @@ data class QuickEntryState(
     val note: String,
     val baseCurrency: String,
     val saving: Boolean,
+    val availableTags: List<Tag> = emptyList(),
+    val selectedTagIds: Set<UUID> = emptySet(),
 )
