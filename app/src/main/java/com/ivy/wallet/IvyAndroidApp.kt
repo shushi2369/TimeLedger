@@ -40,6 +40,7 @@ class IvyAndroidApp : Application(), Configuration.Provider {
         }
 
         maybePromptNotificationAccess()
+        com.ivy.domain.autobackup.AutoBackup.maybeSchedule(this)
     }
 
     /**

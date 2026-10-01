@@ -1,5 +1,10 @@
 package com.ivy.settings
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -17,6 +22,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,11 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -82,6 +90,59 @@ fun BoxWithConstraintsScope.SettingsScreen() {
     val viewModel: SettingsViewModel = screenScopedViewModel()
     val uiState = viewModel.uiState()
     val rootScreen = rootScreen()
+    val context = LocalContext.current
+
+    // fork 增补（2026-09-29）：自动本地备份状态与目录选择
+    val autoBackupPrefs = remember {
+        context.getSharedPreferences(com.ivy.domain.autobackup.AutoBackup.PREFS, Context.MODE_PRIVATE)
+    }
+    var autoBackupEnabled by remember {
+        mutableStateOf(com.ivy.domain.autobackup.AutoBackup.isEnabled(context))
+    }
+    var autoBackupFolder by remember {
+        mutableStateOf(
+            autoBackupPrefs.getString(com.ivy.domain.autobackup.AutoBackup.KEY_TREE_URI, null)
+                ?.let { Uri.parse(it).lastPathSegment?.substringAfter(':') } ?: "未选择"
+        )
+    }
+    val backupFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            autoBackupPrefs.edit()
+                .putString(com.ivy.domain.autobackup.AutoBackup.KEY_TREE_URI, uri.toString())
+                .putBoolean(com.ivy.domain.autobackup.AutoBackup.KEY_ENABLED, true)
+                .apply()
+            autoBackupFolder = Uri.parse(uri.toString()).lastPathSegment
+                ?.substringAfter(':') ?: "已选择"
+            autoBackupEnabled = true
+            com.ivy.domain.autobackup.AutoBackup.maybeSchedule(context)
+        }
+    }
+    val onToggleAutoBackup: (Boolean) -> Unit = { enabled ->
+        if (enabled) {
+            if (autoBackupPrefs.getString(
+                    com.ivy.domain.autobackup.AutoBackup.KEY_TREE_URI, null
+                ) == null
+            ) {
+                backupFolderPicker.launch(null)
+            } else {
+                autoBackupPrefs.edit()
+                    .putBoolean(com.ivy.domain.autobackup.AutoBackup.KEY_ENABLED, true).apply()
+                autoBackupEnabled = true
+                com.ivy.domain.autobackup.AutoBackup.maybeSchedule(context)
+            }
+        } else {
+            autoBackupPrefs.edit()
+                .putBoolean(com.ivy.domain.autobackup.AutoBackup.KEY_ENABLED, false).apply()
+            autoBackupEnabled = false
+            com.ivy.domain.autobackup.AutoBackup.cancel(context)
+        }
+    }
 
     UI(
         currencyCode = uiState.currencyCode,
@@ -110,6 +171,10 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         onExportToCSV = {
             viewModel.onEvent(SettingsEvent.ExportToCsv(rootScreen))
         },
+        autoBackupEnabled = autoBackupEnabled,
+        autoBackupFolder = autoBackupFolder,
+        onToggleAutoBackup = onToggleAutoBackup,
+        onPickBackupFolder = { backupFolderPicker.launch(null) },
         onSetLockApp = {
             viewModel.onEvent(SettingsEvent.SetLockApp(it))
         },
@@ -160,6 +225,10 @@ private fun BoxWithConstraintsScope.UI(
     onSetName: (String) -> Unit = {},
     onBackupData: () -> Unit = {},
     onExportToCSV: () -> Unit = {},
+    autoBackupEnabled: Boolean = false,
+    autoBackupFolder: String = "未选择",
+    onToggleAutoBackup: (Boolean) -> Unit = {},
+    onPickBackupFolder: () -> Unit = {},
     onSetLockApp: (Boolean) -> Unit = {},
     onSetShowNotifications: (Boolean) -> Unit = {},
     onSetTreatTransfersAsIncExp: (Boolean) -> Unit = {},
@@ -269,6 +338,46 @@ private fun BoxWithConstraintsScope.UI(
                         launchedFromOnboarding = false
                     )
                 )
+            }
+
+            // fork 增补（2026-09-29）：自动本地备份
+            Spacer(Modifier.height(16.dp))
+
+            AppSwitch(
+                lockApp = autoBackupEnabled,
+                onSetLockApp = onToggleAutoBackup,
+                text = "自动备份",
+                description = "每天自动备份到所选文件夹（保留最近 7 份），可用下方\"导入数据\"恢复",
+                icon = R.drawable.ic_save
+            )
+
+            if (autoBackupEnabled) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(UI.colors.medium)
+                        .clickable { onPickBackupFolder() }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "备份文件夹",
+                        style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = autoBackupFolder,
+                        style = UI.typo.c.style(color = UI.colors.gray),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.width(160.dp),
+                        textAlign = TextAlign.End
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("›", style = UI.typo.b1.style(color = UI.colors.gray))
+                }
             }
         }
 

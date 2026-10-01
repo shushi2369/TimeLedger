@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -16,7 +18,7 @@ android {
     compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.ivy.wallet"
+        applicationId = "com.shushi2369.timeledger"
         minSdk = libs.versions.min.sdk.get().toInt()
         targetSdk = libs.versions.compile.sdk.get().toInt()
         versionName = libs.versions.version.name.get()
@@ -36,10 +38,22 @@ android {
         }
 
         create("release") {
-            storeFile = file("../sign.jks")
-            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
-            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
-            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+            // fork：优先读取本地 keystore.properties（不入库），回退 CI 环境变量
+            val keystoreProps = Properties().apply {
+                val f = rootProject.file("keystore.properties")
+                if (f.exists()) f.inputStream().use { load(it) }
+            }
+            storeFile = file(
+                keystoreProps.getProperty("storeFile")
+                    ?: System.getenv("SIGNING_STORE_FILE")
+                    ?: "../sign.jks"
+            )
+            storePassword = keystoreProps.getProperty("storePassword")
+                ?: System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias = keystoreProps.getProperty("keyAlias")
+                ?: System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword = keystoreProps.getProperty("keyPassword")
+                ?: System.getenv("SIGNING_KEY_PASSWORD")
         }
     }
 
@@ -57,7 +71,7 @@ android {
 
             signingConfig = signingConfigs.getByName("release")
 
-            resValue("string", "app_name", "Ivy Wallet")
+            resValue("string", "app_name", "Simple记账")
         }
 
         debug {
@@ -70,7 +84,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
 
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "Ivy Wallet Debug")
+            resValue("string", "app_name", "Simple记账 Debug")
         }
 
         create("demo") {
@@ -89,7 +103,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
 
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "Ivy Wallet")
+            resValue("string", "app_name", "Simple记账")
         }
     }
 

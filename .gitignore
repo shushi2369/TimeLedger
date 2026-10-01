@@ -107,3 +107,7 @@ node_modules/*
 /.idea/AndroidProjectSystem.xml
 /.idea/runConfigurations.xml
 .idea
+
+# fork: release signing (keep local)
+keystore.properties
+timeledger-release.jks

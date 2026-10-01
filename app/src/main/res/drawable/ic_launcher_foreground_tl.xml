@@ -1,0 +1,34 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 时钟外圈 -->
+    <path
+        android:pathData="M54,30 C40.7,30 30,40.7 30,54 C30,67.3 40.7,78 54,78 C67.3,78 78,67.3 78,54 C78,40.7 67.3,30 54,30 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:fillColor="#00000000" />
+    <!-- 分针（向上） -->
+    <path
+        android:pathData="M54,42 L54,55"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+    <!-- 时针（向右下） -->
+    <path
+        android:pathData="M54,55 L64,62"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+    <!-- 中心点 -->
+    <path
+        android:pathData="M54,55 m-3.5,0 a3.5,3.5 0 1,1 7,0 a3.5,3.5 0 1,1 -7,0"
+        android:fillColor="#FFFFFF" />
+    <!-- 右下角账本小记号：一本翻开的账页 -->
+    <path
+        android:pathData="M66,68 L84,68 L84,86 L66,86 Z M66,68 L66,86 M72,68 L72,86 M78,68 L78,86"
+        android:strokeColor="#BDF5DC"
+        android:strokeWidth="4"
+        android:fillColor="#00000000" />
+</vector>

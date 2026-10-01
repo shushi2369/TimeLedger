@@ -15,6 +15,9 @@ dependencies {
     implementation(libs.datastore)
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.opencsv)
+    implementation(libs.androidx.work)
+    implementation(libs.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     testImplementation(projects.shared.data.modelTesting)
     testImplementation(projects.shared.data.coreTesting)
