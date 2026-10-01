@@ -73,10 +73,7 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                 .padding(horizontal = 24.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "记一笔",
-                style = UI.typo.b1.style(fontWeight = FontWeight.ExtraBold)
-            )
+            com.ivy.legacy.arkui.ArkBilingualTitle(cn = "记一笔", en = "ADD ENTRY")
             Spacer(Modifier.weight(1f))
             Text(
                 modifier = Modifier.clickable { nav.back() },
