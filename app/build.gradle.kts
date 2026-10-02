@@ -78,7 +78,7 @@ android {
 
             signingConfig = signingConfigs.getByName("release")
 
-            resValue("string", "app_name", "Simple记账")
+            resValue("string", "app_name", "Simple Account")
         }
 
         debug {
@@ -91,7 +91,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
 
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "Simple记账 Debug")
+            resValue("string", "app_name", "Simple Account")
         }
 
         create("demo") {
@@ -110,7 +110,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
 
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "Simple记账")
+            resValue("string", "app_name", "Simple Account")
         }
     }
 

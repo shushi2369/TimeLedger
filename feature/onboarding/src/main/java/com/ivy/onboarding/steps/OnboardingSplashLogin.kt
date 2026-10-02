@@ -186,7 +186,7 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
                 ivyContext = ivyContext,
                 percentTransition = percentTransition
             ),
-            text = "Simple记账",
+            text = "Simple Account",
             style = UI.typo.h2.style(
                 color = UI.colors.pureInverse,
                 fontWeight = FontWeight.ExtraBold

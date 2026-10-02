@@ -56,7 +56,7 @@ class TransactionReminderWorker @AssistedInject constructor(
                     channel = IvyNotificationChannel.TRANSACTION_REMINDER,
                     priority = NotificationCompat.PRIORITY_HIGH
                 )
-                .setContentTitle("Simple记账")
+                .setContentTitle("Simple Account")
                 .setContentText(randomText())
                 .setContentIntent(
                     PendingIntent.getActivity(
