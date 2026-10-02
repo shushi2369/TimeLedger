@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,8 +24,12 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +66,9 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
     val viewModel: QuickEntryViewModel = viewModel()
     val state = viewModel.uiState()
     val nav = navigation()
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showAddCategory by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -103,7 +111,18 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                     viewModel.onCategoryClick(null)
                 }
             }
-            items(items = state.categories, key = { it.id.value }) { category ->
+            item(key = "add_category") {
+                QuickCategoryCell(
+                    name = "新类别",
+                    color = UI.colors.medium,
+                    iconRes = R.drawable.ic_custom_category_s,
+                    iconTint = UI.colors.primary,
+                    selected = false
+                ) {
+                    showAddCategory = true
+                }
+            }
+            items(items = state.categories, key = { "${it.id.value}-${state.categoriesVersion}" }) { category ->
                 QuickCategoryCell(
                     name = category.name.value,
                     color = category.color.value.toComposeColor(),
@@ -152,6 +171,31 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                     color = UI.colors.pureInverse
                 ).copy(fontSize = 40.sp)
             )
+            Spacer(Modifier.height(6.dp))
+
+            // 日期选择：默认今天，可改（补记昨天的账）
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                val dateText = state.selectedDate?.let {
+                    "${it.monthValue}月${it.dayOfMonth}日"
+                } ?: "今天"
+                Text(
+                    text = dateText,
+                    style = UI.typo.c.style(
+                        fontWeight = FontWeight.Bold,
+                        color = if (state.selectedDate != null) UI.colors.primary
+                        else UI.colors.pureInverse.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(UI.colors.medium)
+                        .clickable { showDatePicker = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = state.note,
@@ -234,6 +278,27 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                 onClear = viewModel::onClear
             )
         }
+
+        if (showDatePicker) {
+            QuickDatePickerDialog(
+                initialMillis = java.lang.System.currentTimeMillis(),
+                onConfirm = { date ->
+                    viewModel.selectDate(date)
+                    showDatePicker = false
+                },
+                onDismiss = { showDatePicker = false }
+            )
+        }
+
+        if (showAddCategory) {
+            AddCategoryDialog(
+                onAdd = { name, color ->
+                    viewModel.addCategory(name, color)
+                    showAddCategory = false
+                },
+                onDismiss = { showAddCategory = false }
+            )
+        }
     }
 }
 
@@ -284,6 +349,114 @@ private fun QuickCategoryCell(
             overflow = TextOverflow.Ellipsis
         )
     }
+}
+
+/** 日期选择（今天起可选）——复用备忘录的日期选择器模式。 */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun QuickDatePickerDialog(
+    initialMillis: Long,
+    onConfirm: (java.time.LocalDate) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val state = androidx.compose.material3.rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis
+    )
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        title = { Text("选择日期") },
+        text = {
+            androidx.compose.material3.DatePicker(
+                state = state,
+                title = {},
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val millis = state.selectedDateMillis ?: return@TextButton
+                val date = java.time.Instant.ofEpochMilli(millis)
+                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                onConfirm(date)
+            }) { Text("确定") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}
+
+private val CATEGORY_COLORS = listOf(
+    0xFF2196F3, 0xFF4CAF50, 0xFFFF9800, 0xFFE91E63,
+    0xFF9C27B0, 0xFF00BCD4, 0xFFFF5722, 0xFF607D8B,
+)
+
+/** 新建类别对话框：名称 + 8 色盘。 */
+@Composable
+private fun AddCategoryDialog(
+    onAdd: (String, Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var selectedColor by remember { mutableStateOf(CATEGORY_COLORS.first()) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新类别") },
+        text = {
+            Column {
+                androidx.compose.material3.OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = { Text("类别名称") },
+                    singleLine = true
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                // 8 色两行
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CATEGORY_COLORS.chunked(4).forEach { rowColors ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            rowColors.forEach { color ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(color))
+                                        .then(
+                                            if (color == selectedColor) {
+                                                Modifier.border(
+                                                    3.dp, UI.colors.pureInverse, CircleShape
+                                                )
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
+                                        .clickable { selectedColor = color }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onAdd(name, selectedColor)
+            }) { Text("添加") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
 }
 
 @Composable

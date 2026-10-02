@@ -66,6 +66,8 @@ class QuickEntryViewModel @Inject constructor(
     private var saving by mutableStateOf(false)
     private var availableTags by mutableStateOf<List<Tag>>(emptyList())
     private var selectedTagIds by mutableStateOf<Set<UUID>>(emptySet())
+    private var selectedDate by mutableStateOf<java.time.LocalDate?>(null)
+    private var categoriesVersion by mutableStateOf(0)
 
     init {
         viewModelScope.launch {
@@ -78,6 +80,35 @@ class QuickEntryViewModel @Inject constructor(
             categories = loadedCategories
             availableTags = runCatching { tagRepository.findAll() }.getOrDefault(emptyList())
         }
+    }
+
+    /** 新建类别（名称 + 颜色），保存后刷新类别网格。 */
+    fun addCategory(name: String, colorArgb: Long) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val orderNum = (categories.maxOfOrNull { it.orderNum } ?: 0.0) + 1.0
+                val category = com.ivy.data.model.Category(
+                    id = com.ivy.data.model.CategoryId(UUID.randomUUID()),
+                    name = com.ivy.data.model.primitive.NotBlankTrimmedString.from(trimmed)
+                        .getOrNull() ?: return@withContext,
+                    color = com.ivy.data.model.primitive.ColorInt(colorArgb.toInt()),
+                    icon = null,
+                    orderNum = orderNum,
+                )
+                runCatching { categoryRepository.save(category) }
+            }
+            withContext(Dispatchers.IO) {
+                categories = categoryRepository.findAll().sortedBy { it.orderNum }
+            }
+            categoriesVersion += 1
+        }
+    }
+
+    /** 选择记账日期（null = 今天）。 */
+    fun selectDate(date: java.time.LocalDate?) {
+        selectedDate = date
     }
 
     fun toggleTag(id: UUID) {
@@ -96,6 +127,8 @@ class QuickEntryViewModel @Inject constructor(
             saving = saving,
             availableTags = availableTags,
             selectedTagIds = selectedTagIds,
+            selectedDate = selectedDate,
+            categoriesVersion = categoriesVersion,
         )
     }
 
@@ -165,7 +198,14 @@ class QuickEntryViewModel @Inject constructor(
                         amount = java.math.BigDecimal.valueOf(amount),
                         categoryId = selectedCategoryId,
                         title = note.ifBlank { null },
-                        dateTime = with(timeConverter) { timeNowLocal().toUTC() },
+                        dateTime = selectedDate?.let { date ->
+                            val nowLocal = with(timeConverter) { timeNowLocal() }
+                            java.time.LocalDateTime.of(
+                                date.year, date.monthValue, date.dayOfMonth,
+                                nowLocal.hour, nowLocal.minute, nowLocal.second
+                            )
+                        }?.let { with(timeConverter) { it.toUTC() } }
+                            ?: with(timeConverter) { timeNowLocal().toUTC() },
                     )
                     with(transactionMapper) {
                         legacy.toEntity().toDomain().getOrNull()?.let {
@@ -218,6 +258,7 @@ class QuickEntryViewModel @Inject constructor(
                 note = ""
                 selectedCategoryId = null
                 selectedTagIds = emptySet()
+                selectedDate = null
             }
         }
     }
@@ -322,4 +363,6 @@ data class QuickEntryState(
     val saving: Boolean,
     val availableTags: List<Tag> = emptyList(),
     val selectedTagIds: Set<UUID> = emptySet(),
+    val selectedDate: java.time.LocalDate? = null,
+    val categoriesVersion: Int = 0,
 )
