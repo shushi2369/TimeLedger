@@ -941,11 +941,23 @@ private fun TodoDatePickerDialog(
             }
         }
     )
+    // DatePicker 网格较宽（约 360dp）：AlertDialog 默认宽度在窄屏会裁掉最后一列，
+    // 需 usePlatformDefaultWidth=false 全宽 + 隐藏 DatePicker 内置标题（外层已有）
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
         title = { Text("选择日期") },
         text = {
-            androidx.compose.material3.DatePicker(state = state)
+            androidx.compose.material3.DatePicker(
+                state = state,
+                title = {},
+                modifier = Modifier.fillMaxWidth()
+            )
         },
         confirmButton = {
             TextButton(onClick = {
