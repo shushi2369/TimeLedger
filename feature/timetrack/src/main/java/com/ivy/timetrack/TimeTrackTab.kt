@@ -38,9 +38,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.timetrack.data.TodoEntity
 import com.ivy.timetrack.data.TimeActivityEntity
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.White
@@ -85,6 +88,10 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
     var showAddActivity by remember { mutableStateOf(false) }
     var editEntryTarget by remember { mutableStateOf<TodayEntry?>(null) }
     var editTarget by remember { mutableStateOf<TimeActivityEntity?>(null) }
+    var todoInput by remember { mutableStateOf("") }
+    var todosDoneExpanded by remember { mutableStateOf(false) }
+    var todoRemindTarget by remember { mutableStateOf<TodoEntity?>(null) }
+    var todoTimePickTarget by remember { mutableStateOf<TodoEntity?>(null) }
 
     Column(
         modifier = Modifier
@@ -158,6 +165,163 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
         )
 
         Spacer(Modifier.height(24.dp))
+
+        // ── 备忘录 TODO ─────────────────────────────
+        Row(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(14.dp)
+                    .background(UI.colors.primary)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "备忘录",
+                style = UI.typo.b2.style(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = UI.colors.pureInverse.copy(alpha = 0.7f)
+                )
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "TODO",
+                style = UI.typo.c.style(
+                    fontWeight = FontWeight.Bold,
+                    color = UI.colors.gray
+                ).copy(fontSize = 10.sp, letterSpacing = 0.08.em)
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        val todos = viewModel.todos
+        val todosDone = viewModel.todosDone
+        if (todos.isEmpty() && todosDone.isEmpty()) {
+            Text(
+                text = "今天要做点什么？",
+                style = UI.typo.b2.style(color = UI.colors.pureInverse.copy(alpha = 0.35f)),
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        } else {
+            todos.forEach { todo ->
+                TodoRow(
+                    todo = todo,
+                    onToggle = { viewModel.toggleTodo(todo.id) },
+                    onDelete = { viewModel.deleteTodo(todo.id) },
+                    onRemind = { todoRemindTarget = todo },
+                )
+            }
+
+            if (todosDone.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { todosDoneExpanded = !todosDoneExpanded }
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "已完成 ${todosDone.size}",
+                        style = UI.typo.c.style(color = UI.colors.pureInverse.copy(alpha = 0.45f))
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = if (todosDoneExpanded) "▴" else "▾",
+                        style = UI.typo.c.style(color = UI.colors.pureInverse.copy(alpha = 0.45f))
+                    )
+                }
+                if (todosDoneExpanded) {
+                    todosDone.forEach { todo ->
+                        TodoRow(
+                            todo = todo,
+                            onToggle = { viewModel.toggleTodo(todo.id) },
+                            onDelete = { viewModel.deleteTodo(todo.id) },
+                            onRemind = { todoRemindTarget = todo },
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 输入行
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clip(UI.shapes.r4)
+                .background(UI.colors.medium),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = todoInput,
+                onValueChange = { todoInput = it.take(100) },
+                placeholder = { Text("要做的事…", style = UI.typo.b2) },
+                singleLine = true,
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "＋",
+                style = UI.typo.b2.style(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = UI.colors.primary
+                ),
+                modifier = Modifier
+                    .clickable {
+                        viewModel.addTodo(todoInput)
+                        todoInput = ""
+                    }
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+        }
+
+        todoRemindTarget?.let { target ->
+            RemindOptionsDialog(
+                onPickTime = {
+                    todoRemindTarget = null
+                    todoTimePickTarget = target
+                },
+                onClear = {
+                    viewModel.setTodoRemind(target.id, null)
+                    todoRemindTarget = null
+                },
+                onDismiss = { todoRemindTarget = null }
+            )
+        }
+
+        todoTimePickTarget?.let { target ->
+            TimePickerDialog(
+                initialMillis = target.remindAt ?: System.currentTimeMillis(),
+                onConfirm = { (hour, minute) ->
+                    val cal = java.util.Calendar.getInstance()
+                    cal.timeInMillis = target.remindAt ?: System.currentTimeMillis()
+                    cal.set(java.util.Calendar.HOUR_OF_DAY, hour)
+                    cal.set(java.util.Calendar.MINUTE, minute)
+                    cal.set(java.util.Calendar.SECOND, 0)
+                    cal.set(java.util.Calendar.MILLISECOND, 0)
+                    var remindAt = cal.timeInMillis
+                    if (remindAt <= System.currentTimeMillis()) {
+                        remindAt += 24 * 60 * 60 * 1000L  // 已过 → 明天同一时刻
+                    }
+                    viewModel.setTodoRemind(target.id, remindAt)
+                    todoTimePickTarget = null
+                },
+                onDismiss = { todoTimePickTarget = null }
+            )
+        }
+        // ── TODO 区结束 ─────────────────────────────
+
+        Spacer(Modifier.height(16.dp))
 
         SectionTitle("今日记录")
 
@@ -830,5 +994,111 @@ private fun formatStopwatch(ms: Long): String {
     return String.format(
         Locale.US, "%02d:%02d:%02d",
         totalSec / 3600, (totalSec % 3600) / 60, totalSec % 60
+    )
+}
+
+/** 备忘录单行：红/绿点 + 内容 +（提醒）+ 删除。 */
+@Composable
+private fun TodoRow(
+    todo: TodoEntity,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit,
+    onRemind: () -> Unit,
+) {
+    val dim = todo.done
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 红(未完成)/绿(完成) 点，点击切换
+        Box(
+            modifier = Modifier
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(
+                    if (todo.done) Color(0xFF2FAC78) else Color(0xFFD83C3C)
+                )
+                .clickable(onClick = onToggle)
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        Text(
+            text = todo.content,
+            style = UI.typo.b2.style(
+                fontWeight = if (todo.done) FontWeight.Normal else FontWeight.SemiBold,
+                color = UI.colors.pureInverse.copy(alpha = if (dim) 0.4f else 1f)
+            ),
+            maxLines = 2,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onToggle)
+        )
+
+        // 提醒：未设 → 淡"＋⏰"；已设 → 主色 HH:mm
+        val remindText = todo.remindAt?.let {
+            SimpleDateFormat("HH:mm", Locale.getDefault()).format(java.util.Date(it))
+        }
+        Text(
+            text = remindText ?: "⏰",
+            style = UI.typo.c.style(
+                fontWeight = FontWeight.Bold,
+                color = if (remindText != null) UI.colors.primary
+                else UI.colors.pureInverse.copy(alpha = 0.25f)
+            ),
+            modifier = Modifier
+                .clickable(onClick = onRemind)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+
+        // 删除
+        Text(
+            text = "✕",
+            style = UI.typo.c.style(color = UI.colors.pureInverse.copy(alpha = 0.35f)),
+            modifier = Modifier
+                .clickable(onClick = onDelete)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+/** 已设提醒的行点击：修改时间 / 清除提醒。 */
+@Composable
+private fun RemindOptionsDialog(
+    onPickTime: () -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("提醒") },
+        text = {
+            Column {
+                Text(
+                    text = "修改提醒时间",
+                    style = UI.typo.b2.style(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onPickTime)
+                        .padding(vertical = 12.dp)
+                )
+                Text(
+                    text = "清除提醒",
+                    style = UI.typo.b2.style(
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFE53935)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onClear)
+                        .padding(vertical = 12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
     )
 }

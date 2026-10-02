@@ -9,7 +9,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ivy.timetrack.data.TimeActivityDao
 import com.ivy.timetrack.data.TimeActivityEntity
+import com.ivy.timetrack.data.TodoDao
+import com.ivy.timetrack.data.TodoEntity
 import com.ivy.timetrack.data.TimeEntryDao
+import com.ivy.timetrack.alarm.TodoAlarmScheduler
 import com.ivy.timetrack.data.TimeEntryEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,6 +44,8 @@ private data class LoadResult(
     val running: TimeEntryEntity?,
     val today: List<TodayEntry>,
     val week: List<WeekTotal>,
+    val todosActive: List<TodoEntity>,
+    val todosDone: List<TodoEntity>,
 )
 
 private val DEFAULT_ACTIVITIES = listOf(
@@ -57,6 +62,8 @@ private const val DELETED_ACTIVITY_COLOR = 0xFF9E9E9E
 class TimeTrackViewModel @Inject constructor(
     private val activityDao: TimeActivityDao,
     private val entryDao: TimeEntryDao,
+    private val todoDao: TodoDao,
+    private val ivyWalletCtx: com.ivy.legacy.IvyWalletCtx,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -67,6 +74,10 @@ class TimeTrackViewModel @Inject constructor(
     var todayEntries by mutableStateOf<List<TodayEntry>>(emptyList())
         private set
     var weekTotals by mutableStateOf<List<WeekTotal>>(emptyList())
+        private set
+    var todos by mutableStateOf<List<TodoEntity>>(emptyList())
+        private set
+    var todosDone by mutableStateOf<List<TodoEntity>>(emptyList())
         private set
 
     init {
@@ -83,6 +94,8 @@ class TimeTrackViewModel @Inject constructor(
             runningEntry = result.running
             todayEntries = result.today
             weekTotals = result.week
+            todos = result.todosActive
+            todosDone = result.todosDone
         }
     }
 
@@ -328,7 +341,89 @@ class TimeTrackViewModel @Inject constructor(
             running = entryDao.findRunning(),
             today = today,
             week = week,
+            todosActive = todoDao.findAllActive(),
+            todosDone = todoDao.findAllDone(),
         )
+    }
+
+    fun addTodo(content: String) {
+        val trimmed = content.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                todoDao.save(
+                    TodoEntity(
+                        id = UUID.randomUUID().toString(),
+                        content = trimmed.take(100),
+                        createdAt = System.currentTimeMillis(),
+                    )
+                )
+            }
+            refresh()
+        }
+    }
+
+    /** 点红点/绿点：切换完成态；完成时撤提醒闹钟，恢复时未过期的提醒重排。 */
+    fun toggleTodo(id: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                todoDao.findById(id)?.let { todo ->
+                    val done = !todo.done
+                    todoDao.save(
+                        todo.copy(
+                            done = done,
+                            doneAt = if (done) System.currentTimeMillis() else null,
+                        )
+                    )
+                    if (done) {
+                        TodoAlarmScheduler.cancel(context, todo.id)
+                    } else {
+                        TodoAlarmScheduler.schedule(context, todo.copy(done = false))
+                    }
+                }
+            }
+            refresh()
+        }
+    }
+
+    fun deleteTodo(id: String) {
+        viewModelScope.launch {
+            val removed = withContext(Dispatchers.IO) {
+                todoDao.findById(id).also { it?.let { t -> todoDao.deleteById(t.id) } }
+            }
+            removed?.let { todo ->
+                TodoAlarmScheduler.cancel(context, todo.id)
+                // 全局 Snackbar 撤销：闭包只捕获单例 DAO 与调度器（不依赖本 VM 生命周期）
+                ivyWalletCtx.showSnackbar(
+                    message = "已删除备忘「${todo.content.take(12)}」",
+                    actionLabel = "撤销",
+                    onAction = {
+                        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                            runCatching {
+                                todoDao.save(todo)
+                                TodoAlarmScheduler.schedule(context, todo)
+                            }
+                        }
+                    }
+                )
+            }
+            refresh()
+        }
+    }
+
+    /** 设置/修改/清除提醒（remindAt = null 清除）。 */
+    fun setTodoRemind(id: String, remindAt: Long?) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                todoDao.findById(id)?.let { todo ->
+                    val updated = todo.copy(remindAt = remindAt)
+                    todoDao.save(updated)
+                    if (remindAt != null) TodoAlarmScheduler.schedule(context, updated)
+                    else TodoAlarmScheduler.cancel(context, todo.id)
+                }
+            }
+            refresh()
+        }
     }
 
     companion object {

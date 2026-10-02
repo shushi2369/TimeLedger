@@ -2,4 +2,6 @@
 <resources>
     <string name="time_tracking_notification_title">计时中</string>
     <string name="time_tracking_channel_name">时间计时</string>
+    <string name="todo_notification_title">备忘提醒</string>
+    <string name="todo_channel_name">待办提醒</string>
 </resources>
