@@ -92,6 +92,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
     var todosDoneExpanded by remember { mutableStateOf(false) }
     var todoRemindTarget by remember { mutableStateOf<TodoEntity?>(null) }
     var todoTimePickTarget by remember { mutableStateOf<TodoEntity?>(null) }
+    var todoDatePickTarget by remember { mutableStateOf<TodoEntity?>(null) }
 
     Column(
         modifier = Modifier
@@ -289,13 +290,25 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
             RemindOptionsDialog(
                 onPickTime = {
                     todoRemindTarget = null
-                    todoTimePickTarget = target
+                    todoDatePickTarget = target   // 先选日期，再选时间
                 },
                 onClear = {
                     viewModel.setTodoRemind(target.id, null)
                     todoRemindTarget = null
                 },
                 onDismiss = { todoRemindTarget = null }
+            )
+        }
+
+        todoDatePickTarget?.let { target ->
+            TodoDatePickerDialog(
+                initialMillis = target.remindAt ?: System.currentTimeMillis(),
+                onConfirm = { dateMillis ->
+                    todoDatePickTarget = null
+                    val t = target.copy(remindAt = dateMillis)
+                    todoTimePickTarget = t
+                },
+                onDismiss = { todoDatePickTarget = null }
             )
         }
 
@@ -309,16 +322,13 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
                     cal.set(java.util.Calendar.MINUTE, minute)
                     cal.set(java.util.Calendar.SECOND, 0)
                     cal.set(java.util.Calendar.MILLISECOND, 0)
-                    var remindAt = cal.timeInMillis
-                    if (remindAt <= System.currentTimeMillis()) {
-                        remindAt += 24 * 60 * 60 * 1000L  // 已过 → 明天同一时刻
-                    }
-                    viewModel.setTodoRemind(target.id, remindAt)
+                    viewModel.setTodoRemind(target.id, cal.timeInMillis)
                     todoTimePickTarget = null
                 },
                 onDismiss = { todoTimePickTarget = null }
             )
         }
+
         // ── TODO 区结束 ─────────────────────────────
 
         Spacer(Modifier.height(16.dp))
@@ -909,6 +919,45 @@ private fun EditEntryDialog(
 
 private fun formatTime(millis: Long, fmt: SimpleDateFormat): String = fmt.format(java.util.Date(millis))
 
+/** 备忘提醒日期选择（material3 DatePicker，今天起可选）。 */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun TodoDatePickerDialog(
+    initialMillis: Long,
+    onConfirm: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val state = androidx.compose.material3.rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis,
+        selectableDates = object : androidx.compose.material3.SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                // 今天 0 点（本地）起可选；DatePicker 的毫秒是 UTC 语义
+                val cal = java.util.Calendar.getInstance()
+                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                cal.set(java.util.Calendar.MINUTE, 0)
+                cal.set(java.util.Calendar.SECOND, 0)
+                cal.set(java.util.Calendar.MILLISECOND, 0)
+                return utcTimeMillis >= cal.timeInMillis - java.util.TimeZone.getDefault().getOffset(cal.timeInMillis)
+            }
+        }
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择日期") },
+        text = {
+            androidx.compose.material3.DatePicker(state = state)
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                state.selectedDateMillis?.let { onConfirm(it) }
+            }) { Text("下一步") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}
+
 /** material3 TimePicker + AlertDialog 包装（24 小时制）。 */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -1037,9 +1086,21 @@ private fun TodoRow(
                 .clickable(onClick = onToggle)
         )
 
-        // 提醒：未设 → 淡"＋⏰"；已设 → 主色 HH:mm
+        // 提醒：未设 → 淡"⏰"；已设 → 今天/明天/M月d日 + 时刻
         val remindText = todo.remindAt?.let {
-            SimpleDateFormat("HH:mm", Locale.getDefault()).format(java.util.Date(it))
+            val cal = java.util.Calendar.getInstance().apply { timeInMillis = it }
+            val now = java.util.Calendar.getInstance()
+            val sameDay = cal.get(java.util.Calendar.YEAR) == now.get(java.util.Calendar.YEAR) &&
+                    cal.get(java.util.Calendar.DAY_OF_YEAR) == now.get(java.util.Calendar.DAY_OF_YEAR)
+            val tomorrowCal = (now.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_YEAR, 1) }
+            val isTomorrow = cal.get(java.util.Calendar.YEAR) == tomorrowCal.get(java.util.Calendar.YEAR) &&
+                    cal.get(java.util.Calendar.DAY_OF_YEAR) == tomorrowCal.get(java.util.Calendar.DAY_OF_YEAR)
+            val hm = SimpleDateFormat("HH:mm", Locale.getDefault()).format(java.util.Date(it))
+            when {
+                sameDay -> hm
+                isTomorrow -> "明天 $hm"
+                else -> "${cal.get(java.util.Calendar.MONTH) + 1}月${cal.get(java.util.Calendar.DAY_OF_MONTH)}日 $hm"
+            }
         }
         Text(
             text = remindText ?: "⏰",
