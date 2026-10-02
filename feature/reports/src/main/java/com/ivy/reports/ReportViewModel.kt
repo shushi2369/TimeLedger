@@ -105,6 +105,12 @@ class ReportViewModel @Inject constructor(
     private var categories by mutableStateOf<ImmutableList<Category>>(persistentListOf())
     private var historyIncomeExpense by mutableStateOf(IncomeExpenseTransferPair.zero())
     private var filter by mutableStateOf<ReportFilter?>(null)
+    var yearMode by mutableStateOf(false)
+        private set
+    var selectedYear by mutableStateOf(java.time.LocalDate.now().year)
+        private set
+    var selectedMonth by mutableStateOf(java.time.LocalDate.now().monthValue)
+        private set
     private var balance by mutableDoubleStateOf(0.0)
     private var income by mutableDoubleStateOf(0.0)
     private var expenses by mutableDoubleStateOf(0.0)
@@ -143,6 +149,9 @@ class ReportViewModel @Inject constructor(
         }
 
         return ReportScreenState(
+            yearMode = yearMode,
+            selectedYear = selectedYear,
+            selectedMonth = selectedMonth,
             categories = categories,
             accounts = accounts,
             accountIdFilters = accountIdFilters,
@@ -174,6 +183,10 @@ class ReportViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.Default) {
             when (event) {
                 is ReportScreenEvent.OnFilter -> setFilter(event.filter)
+                is ReportScreenEvent.OnPeriodPrevious -> shiftPeriod(-1)
+                is ReportScreenEvent.OnPeriodNext -> shiftPeriod(1)
+                is ReportScreenEvent.OnPeriodMonthPicked -> pickMonth(event.year, event.month)
+                is ReportScreenEvent.OnPeriodYearPicked -> pickYear(event.year)
                 is ReportScreenEvent.OnExport -> export(event.context)
                 is ReportScreenEvent.OnPayOrGet -> payOrGet(event.transaction)
                 is ReportScreenEvent.SkipTransaction -> skipTransaction(event.transaction)
@@ -224,7 +237,10 @@ class ReportViewModel @Inject constructor(
             if (filter == null) {
                 val defaultFilter = ReportFilter(
                     trnTypes = listOf(TransactionType.INCOME, TransactionType.EXPENSE),
-                    period = TimePeriod.currentMonth(ivyContext.startDayOfMonth),
+                    period = TimePeriod(
+                        month = com.ivy.legacy.data.model.Month.fromMonthValue(selectedMonth),
+                        year = selectedYear
+                    ),
                     accounts = accounts.toList(),
                     categories = categories.toList(),
                     currency = baseCurrency,
@@ -238,6 +254,59 @@ class ReportViewModel @Inject constructor(
                 filter = defaultFilter
                 setFilter(defaultFilter)
             }
+        }
+    }
+
+    /** 微信式期间切换：月模式 ±1 月（跨年自动滚动），年模式 ±1 年。 */
+    private fun shiftPeriod(direction: Int) {
+        if (yearMode) {
+            pickYear(selectedYear + direction)
+        } else {
+            var m = selectedMonth + direction
+            var y = selectedYear
+            if (m > 12) { m = 1; y += 1 }
+            if (m < 1) { m = 12; y -= 1 }
+            pickMonth(y, m)
+        }
+    }
+
+    /** 按月查看：TimePeriod(month, year)。 */
+    private fun pickMonth(year: Int, month: Int) {
+        selectedYear = year
+        selectedMonth = month
+        yearMode = false
+        val current = filter ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            setFilter(
+                    current.copy(
+                        period = TimePeriod(
+                            month = com.ivy.legacy.data.model.Month.fromMonthValue(month),
+                            year = year
+                        )
+                    )
+                )
+        }
+    }
+
+    /** 按年查看：显式全年 fromToRange（toRange 对 month=null 不产出全年）。 */
+    private fun pickYear(year: Int) {
+        selectedYear = year
+        yearMode = true
+        val current = filter ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            val from = com.ivy.legacy.utils.startOfMonth(
+                java.time.LocalDate.of(year, 1, 1), timeConverter
+            )
+            val to = com.ivy.legacy.utils.endOfMonth(
+                java.time.LocalDate.of(year, 12, 31), timeConverter
+            )
+            setFilter(
+                current.copy(
+                    period = TimePeriod(
+                        fromToRange = com.ivy.legacy.data.model.FromToTimeRange(from = from, to = to)
+                    )
+                )
+            )
         }
     }
 

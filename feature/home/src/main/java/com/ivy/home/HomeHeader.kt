@@ -236,6 +236,23 @@ fun CashFlowInfo(
                 },
             ),
     ) {
+        // 方案A：大数字 = 所选月份结余（收入−支出），默认当月；总余额移至账户 Tab
+        val monthSurplus = monthlyIncome - monthlyExpenses
+        val selectedPeriod = ivyWalletCtx().selectedPeriod
+        val periodLabel = buildString {
+            selectedPeriod.year?.let { append("${it}年") }
+            selectedPeriod.month?.let { append("${it.monthValue}月") }
+        }.ifBlank { "本月" }
+
+        Text(
+            text = "$periodLabel 结余",
+            style = UI.typo.c.style(
+                fontWeight = FontWeight.SemiBold,
+                color = UI.colors.pureInverse.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.padding(horizontal = 20.dp)
+        )
+        Spacer(Modifier.height(2.dp))
         BalanceRow(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
@@ -248,7 +265,9 @@ fun CashFlowInfo(
                 }
                 .testTag("home_balance"),
             currency = currency,
-            balance = balance,
+            balance = monthSurplus,
+            textColor = if (monthSurplus < 0) Red else Green,
+            balanceAmountPrefix = if (monthSurplus > 0) "+" else null,
             shortenBigNumbers = true,
             hiddenMode = hideBalance
         )
@@ -298,31 +317,6 @@ fun CashFlowInfo(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        val cashflow = monthlyIncome - monthlyExpenses
-        if (cashflow != 0.0 && !hideBalance) {
-            Spacer(Modifier.height(12.dp))
-
-            Text(
-                modifier = Modifier.padding(
-                    start = 24.dp,
-                ),
-                text = stringResource(
-                    R.string.cashflow,
-                    (if (cashflow > 0) "+" else ""),
-                    cashflow.format(currency),
-                    com.ivy.legacy.utils.currencyDisplay(currency),
-                ),
-                style = UI.typo.nB2.style(
-                    color = if (cashflow < 0) Red else Green,
-                ),
-            )
-
-            Spacer(Modifier.height(4.dp))
-        } else {
-            Spacer(Modifier.height(16.dp))
-        }
     }
 }
 

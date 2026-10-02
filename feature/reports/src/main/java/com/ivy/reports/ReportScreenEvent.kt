@@ -4,6 +4,10 @@ import android.content.Context
 import com.ivy.data.model.Transaction
 
 sealed class ReportScreenEvent {
+    data class OnPeriodPrevious(val yearMode: Boolean) : ReportScreenEvent()
+    data class OnPeriodNext(val yearMode: Boolean) : ReportScreenEvent()
+    data class OnPeriodMonthPicked(val year: Int, val month: Int) : ReportScreenEvent()
+    data class OnPeriodYearPicked(val year: Int) : ReportScreenEvent()
     data class OnFilter(val filter: ReportFilter?) : ReportScreenEvent()
     data class OnExport(val context: Context) : ReportScreenEvent()
     data class OnPayOrGet(val transaction: Transaction) : ReportScreenEvent()

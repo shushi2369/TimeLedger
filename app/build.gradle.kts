@@ -1,5 +1,12 @@
 import java.util.Properties
 
+// 本地代理环境下 Crashlytics mapping 上传会握手失败，且个人分发无需符号表——直接禁用
+tasks.whenTaskAdded {
+    if (name.contains("uploadCrashlyticsMappingFile", ignoreCase = true)) {
+        enabled = false
+    }
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")

@@ -40,8 +40,9 @@ import kotlin.math.max
 fun ReportsBarChart(
     history: ImmutableList<TransactionHistoryItem>,
     modifier: Modifier = Modifier,
+    monthlyGranularity: Boolean = false,
 ) {
-    val days = aggregateByDay(history)
+    val days = if (monthlyGranularity) aggregateByMonth(history) else aggregateByDay(history)
     if (days.isEmpty()) return
 
     Column(
@@ -114,11 +115,11 @@ fun ReportsBarChart(
                 .padding(top = 2.dp)
         ) {
             days.forEachIndexed { index, entry ->
-                val show = days.size <= 10 ||
+                val show = days.size <= 13 ||
                         index % 5 == 0 ||
                         index == days.size - 1
                 Text(
-                    text = if (show) "${entry.first.dayOfMonth}" else "",
+                    text = if (show) "${entry.first.monthValue}" else "",
                     style = UI.typo.c.style(
                         color = UI.colors.pureInverse.copy(alpha = 0.4f)
                     ).copy(fontSize = 9.sp),
@@ -167,6 +168,28 @@ private fun aggregateByDay(
             }
         } else if (item is com.ivy.wallet.domain.data.TransactionHistoryDateDivider) {
             // 日期分隔条目只用于列表展示，不参与聚合
+        }
+    }
+    return map.map { it.key to it.value }
+}
+
+/** 按年视图：按自然月聚合（12 根柱）。 */
+private fun aggregateByMonth(
+    history: ImmutableList<TransactionHistoryItem>
+): List<Pair<java.time.LocalDate, Pair<Double, Double>>> {
+    val map = sortedMapOf<java.time.LocalDate, Pair<Double, Double>>()
+    history.forEach { item ->
+        if (item is Transaction && item.type != TransactionType.TRANSFER) {
+            val date = item.date
+                ?: item.dateTime?.atZone(ZoneId.systemDefault())?.toLocalDate()
+                ?: return@forEach
+            val monthStart = date.withDayOfMonth(1)
+            val amount = item.amount.toDouble()
+            val current = map[monthStart] ?: Pair(0.0, 0.0)
+            map[monthStart] = when (item.type) {
+                TransactionType.INCOME -> Pair(current.first + amount, current.second)
+                else -> Pair(current.first, current.second + amount)
+            }
         }
     }
     return map.map { it.key to it.value }

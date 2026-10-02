@@ -2,6 +2,8 @@ package com.ivy.reports
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
@@ -9,14 +11,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -146,11 +157,171 @@ private fun BoxWithConstraintsScope.UI(
         }
 
         item {
+            var periodPickerVisible by remember { mutableStateOf(false) }
+
             com.ivy.legacy.arkui.ArkBilingualTitle(
                 cn = stringResource(R.string.reports),
                 en = "REPORTS",
                 modifier = Modifier.padding(start = 32.dp)
             )
+
+            Spacer(Modifier.height(8.dp))
+
+            // 微信式期间切换条：◀ 2026年10月 ▶（点文字弹月/年选择）
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "◀",
+                    style = UI.typo.b2.style(
+                        fontWeight = FontWeight.Bold,
+                        color = UI.colors.pureInverse.copy(alpha = 0.6f)
+                    ),
+                    modifier = Modifier
+                        .clip(UI.shapes.rFull)
+                        .clickable { onEventHandler.invoke(ReportScreenEvent.OnPeriodPrevious(state.yearMode)) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+
+                Text(
+                    text = if (state.yearMode) "${state.selectedYear}年"
+                    else "${state.selectedYear}年${state.selectedMonth}月",
+                    style = UI.typo.b2.style(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = UI.colors.primary
+                    ),
+                    modifier = Modifier
+                        .clip(UI.shapes.rFull)
+                        .clickable { periodPickerVisible = true }
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+
+                Text(
+                    text = "▶",
+                    style = UI.typo.b2.style(
+                        fontWeight = FontWeight.Bold,
+                        color = UI.colors.pureInverse.copy(alpha = 0.6f)
+                    ),
+                    modifier = Modifier
+                        .clip(UI.shapes.rFull)
+                        .clickable { onEventHandler.invoke(ReportScreenEvent.OnPeriodNext(state.yearMode)) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+
+                Spacer(Modifier.weight(1f))
+            }
+
+            // 月/年选择对话框
+            if (periodPickerVisible) {
+                val currentYear = state.selectedYear
+                AlertDialog(
+                    onDismissRequest = { periodPickerVisible = false },
+                    title = { Text("查看期间") },
+                    text = {
+                        Column {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                androidx.compose.material3.FilterChip(
+                                    selected = !state.yearMode,
+                                    onClick = {
+                                        onEventHandler.invoke(
+                                            ReportScreenEvent.OnPeriodMonthPicked(
+                                                currentYear, state.selectedMonth
+                                            )
+                                        )
+                                    },
+                                    label = { Text("按月") }
+                                )
+                                androidx.compose.material3.FilterChip(
+                                    selected = state.yearMode,
+                                    onClick = {
+                                        onEventHandler.invoke(ReportScreenEvent.OnPeriodYearPicked(currentYear))
+                                    },
+                                    label = { Text("按年") }
+                                )
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            // 年份切换
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "◀",
+                                    modifier = Modifier
+                                        .clickable {
+                                            onEventHandler.invoke(ReportScreenEvent.OnPeriodYearPicked(currentYear - 1))
+                                        }
+                                        .padding(8.dp)
+                                )
+                                Text(
+                                    text = "$currentYear 年",
+                                    style = UI.typo.b2.style(fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                                Text(
+                                    text = "▶",
+                                    modifier = Modifier
+                                        .clickable {
+                                            onEventHandler.invoke(ReportScreenEvent.OnPeriodYearPicked(currentYear + 1))
+                                        }
+                                        .padding(8.dp)
+                                )
+                            }
+
+                            // 按月时：12 个月格子
+                            if (!state.yearMode) {
+                                Spacer(Modifier.height(8.dp))
+                                for (row in 0..2) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly
+                                    ) {
+                                        for (col in 0..3) {
+                                            val m = row * 4 + col + 1
+                                            if (m <= 12) {
+                                                val selected = state.selectedMonth == m &&
+                                                        state.selectedYear == currentYear
+                                                Text(
+                                                    text = "${m}月",
+                                                    style = UI.typo.b2.style(
+                                                        fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Normal,
+                                                        color = if (selected) Color.White else UI.colors.pureInverse
+                                                    ),
+                                                    modifier = Modifier
+                                                        .clip(UI.shapes.rFull)
+                                                        .background(
+                                                            if (selected) UI.colors.primary else UI.colors.medium
+                                                        )
+                                                        .clickable {
+                                                            onEventHandler.invoke(
+                                                                ReportScreenEvent.OnPeriodMonthPicked(currentYear, m)
+                                                            )
+                                                            periodPickerVisible = false
+                                                        }
+                                                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                                                )
+                                            } else {
+                                                Spacer(Modifier.width(48.dp))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(
+                            onClick = { periodPickerVisible = false }
+                        ) { Text("完成") }
+                    }
+                )
+            }
 
             Spacer(Modifier.height(8.dp))
 
@@ -226,7 +397,7 @@ private fun BoxWithConstraintsScope.UI(
         }
 
         item {
-            ReportsBarChart(history = state.history)
+            ReportsBarChart(history = state.history, monthlyGranularity = state.yearMode)
         }
 
         if (state.filter != null) {

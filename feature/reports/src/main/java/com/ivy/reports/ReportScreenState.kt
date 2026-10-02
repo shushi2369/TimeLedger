@@ -33,5 +33,8 @@ data class ReportScreenState(
     val showTransfersAsIncExpCheckbox: Boolean = false,
     val treatTransfersAsIncExp: Boolean = false,
     val allTags: ImmutableList<Tag> = persistentListOf(),
-    val showAccountColorsInTransactions: Boolean = false
+    val showAccountColorsInTransactions: Boolean = false,
+    val yearMode: Boolean = false,
+    val selectedYear: Int = java.time.LocalDate.now().year,
+    val selectedMonth: Int = java.time.LocalDate.now().monthValue
 )
