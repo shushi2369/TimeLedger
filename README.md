@@ -1,189 +1,97 @@
-# TimeLedger 时账本（Ivy Wallet 中文 Fork）
+<div align="center">
 
-> **这是一个独立开发的中文 Fork**：基于 [Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet)（GPL-3.0）二次开发的全中文记账 × 时间管理安卓应用，依 GPL-3.0 协议开源。
->
-> **新增/改动**：鲨鱼式快速记账（类别网格 + 加减计算键盘，正负号区分收支）、全量中文化、货币中文显示（元/美元）、报表柱状图、人生指南模块（内置 [HowToLiveBetter](https://github.com/eternity4719/HowToLiveBetter) 624 条循证建议，Unlicense）、付款后自动提醒记账（通知监听）、账单到期提醒、时段问候、主页快捷入口。已修复上游 @HiltWorker 无法实例化等问题。
->
-> **特点**：本地优先 · 无广告 · 无强制注册 · 离线可用 · 基础功能无付费墙。
->
-> 技术栈：Kotlin + Jetpack Compose + Room + Hilt ｜ minSdk 28
+<img src="docs/assets/icon.webp" width="96" alt="Simple Account 图标"/>
+
+# Simple Account（时账本）
+
+**记账 × 时间管理 ｜ 本地优先 ｜ 无广告 ｜ 无账号 ｜ 开源免费**
+
+给"想看清钱和时间都去哪了"的人：左边记钱，右边记时间，同一屏对照。
+
+[![Latest Release](https://img.shields.io/github/v/release/shushi2369/TimeLedger)](https://github.com/shushi2369/TimeLedger/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-Android%209%2B-brightgreen)
+[![GitHub Repo stars](https://img.shields.io/github/stars/shushi2369/TimeLedger?style=social)](https://github.com/shushi2369/TimeLedger/stargazers)
+
+**[⬇ 下载最新 APK](https://github.com/shushi2369/TimeLedger/releases/latest)**
+
+</div>
 
 ---
 
->[!IMPORTANT]
->**🚨 Notice: Project No Longer Maintained 🚨**
->
->As of **Nov 5th, 2024**, this project is no longer maintained by the original developers. No further updates, bug fixes, or support will be provided.
->
->- **Pull Requests and Issues**: We will not be reviewing or merging pull requests, nor responding to issues or discussions.
->
->- **Forking and Future Development**: In accordance with the [GPL-3.0 License](LICENSE), you are encouraged to **fork this repository** to continue development independently. You are free to modify, distribute, and release your own versions under the same license.
->
->- **Disclaimer of Liability**:
->  - **"As-Is" Basis**: This software is provided on an "as-is" basis without any warranties or conditions of any kind, either express or implied.
->  - **No Liability**: The original maintainers shall not be liable for any claims, damages, or other liabilities arising from the use, modification, or distribution of this software.
->  - **User Responsibility**: Users and developers who choose to use or fork this project assume all risks and responsibilities associated with its use and further development.
->
->For more information, please refer to the [LICENSE](LICENSE) file.
+## 📸 截图
 
-[![Latest Release](https://img.shields.io/github/v/release/Ivy-Apps/ivy-wallet)](https://github.com/Ivy-Apps/ivy-wallet/releases)
-[![APK](https://github.com/Ivy-Apps/ivy-wallet/actions/workflows/apk.yml/badge.svg)](https://github.com/Ivy-Apps/ivy-wallet/actions/workflows/apk.yml)
-[![Telegram Group](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/+ETavgioAvWg4NThk)
+| 主页 · 当月结余 | 快速记账 · 算式键盘 | 时间 · 计时 + 备忘录 |
+|:---:|:---:|:---:|
+| ![主页](docs/screenshots/home.png) | ![快速记账](docs/screenshots/quick-entry.png) | ![时间](docs/screenshots/time.png) |
+| **报表 · 年月切换** | **人生指南** | |
+| ![报表](docs/screenshots/reports.png) | ![人生指南](docs/screenshots/lifeguide.png) | |
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![GitHub Repo stars](https://img.shields.io/github/stars/Ivy-Apps/ivy-wallet?style=social)](https://github.com/Ivy-Apps/ivy-wallet/stargazers)
-[![Fork Ivy Wallet](https://img.shields.io/github/forks/Ivy-Apps/ivy-wallet?logo=github&style=social)](https://github.com/Ivy-Apps/ivy-wallet/fork)
+## ✨ 功能总览
 
-# [Ivy Wallet: money manager](https://play.google.com/store/apps/details?id=com.ivy.wallet)
+### ⚡ 秒级记账
+- **鲨鱼式快速记账**：底部「＋」直达 —— 类别网格 + 计算器键盘，支持 `12+8.5` 连算、`×÷` 优先级、两位小数自动四舍五入
+- **正负即收支**：表达式 ≥0 记支出、<0 记收入（自动取绝对值），金额行实时预览「将记为：支出 20.50 元」
+- 记错**一键撤销**（保存后 Snackbar）；`#标签` 多选；日期可选（补记/预记都行）；网格内**随手新建类别**
+- 转账、计划支付（周期记账到期一键入账）、账户与分类管理完整支持
 
-|                                                                                                            |                                                                                                            |                                                                                                            |                                                                                                            |
-|:----------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------:|
-| ![1](https://user-images.githubusercontent.com/5564499/189540998-4d6cdcd3-ab4d-40f7-85d4-c82fe8a017d1.png) | ![2](https://user-images.githubusercontent.com/5564499/189541011-1ebbd8b6-50fe-432a-91e2-59206efe99ce.png) | ![3](https://user-images.githubusercontent.com/5564499/189541023-35e7f163-d639-4466-9a91-c56890d5a28e.png) | ![4](https://user-images.githubusercontent.com/5564499/189541027-d352314c-fd5c-43eb-82ad-4aba14c7b0fa.png) |
-| ![5](https://user-images.githubusercontent.com/5564499/189541030-1a0d7948-33af-420b-b126-936d0211c93f.png) | ![6](https://user-images.githubusercontent.com/5564499/189541035-621c4511-5ec7-4d3f-b08e-925d8da95472.png) | ![7](https://user-images.githubusercontent.com/5564499/189541127-7adf5bfa-0652-461c-80f1-076b7179eb6c.png) | ![8](https://user-images.githubusercontent.com/5564499/189541040-7cab633e-be4c-40b2-a2c6-890a15edf805.png) |
+### ⏱️ 时间管理
+- 点活动**开始计时**，点其他活动自动切换，支持**暂停/继续**；通知栏常驻秒表（系统级走秒，零轮询），计时中杀进程计时不断
+- 活动可设**每日目标时长**，自动统计达成率
+- 今日时间线支持**编辑起止时间与备注**（忘按开始/结束可补录），最近 7 天活动汇总比例条
+- **备忘录 TODO**：时间页内随手记，点击红/绿点完成切换，支持**任意日期准点提醒**（AlarmManager，重启自动重排）
 
-Ivy Wallet is a free and open source **money management android app**. It's written using **100% Kotlin and Jetpack Compose**. It's designed to help you keep track of your personal finances with ease.
+### 📊 报表与导入
+- 主页**当月结余**大字（正绿负红），收支卡随月份切换
+- 每日收入/支出**柱状图**，微信账单式「◀ 2026年10月 ▶」**按月/按年切换**
+- **支付宝/微信账单 CSV 导入**：本地解析，自适应 UTF-8/GB18030/UTF-16 编码，按订单号去重，导入前可预览确认
 
-Think of Ivy Wallet as a manual expense tracker that tries to replace the good old spreadsheet for managing your finances.
+### 🛡️ 隐私与数据
+- **本地优先**：无账号体系、无广告、无数据收集，全功能离线可用
+- **每日自动备份**（zip 保留最近 7 份）+ 一键恢复；CSV 导出（UTF-8 带 BOM，Excel 直接打开无乱码）
+- **智能提醒全在本地**：计划支付到期提醒；授权通知使用权后可解析微信/支付宝/云闪付/银行短信的付款通知，弹提醒直达记账页——全程不联网、不上传
 
-**Do you know? Ask yourself.**
+### 🎨 特色
+- **明日方舟档案风 UI**：直角设计语言、中英双语标题（TIME / REPORTS / FIELD MANUAL）、Novecento Sans Wide 数字字型、深色模式
+- **人生指南**：内置 [HowToLiveBetter](https://github.com/eternity4719/HowToLiveBetter) 708 条循证生活建议（公有领域），34 章按性价比着色，支持全文检索
 
-1) How much money do I have in total?
+## 📥 下载安装
 
-2) How much did I spend this month and what did I spend it on?
+前往 [**Releases**](https://github.com/shushi2369/TimeLedger/releases) 下载最新的 `Simple Account-*.apk` 安装即可。
 
-3) How much can I spend and still meet my financial goals?
+- 系统要求：**Android 9.0+**
+- 应用与数据完全在本地，卸载即删；换机前请先在 设置 → 导入导出 中备份
 
-A money management app can help you answer these questions.
+## 🔨 自己构建
 
-Ivy Wallet may lack some of the features you're looking for, but it truly shines in its user interface and experience, as well as its simplicity and customization options. This was recognized in the ["Top/Best Android App in 2021/2022 charts"](https://youtube.com/playlist?list=PLguJN0waG1-eSzKMuFMIULrR3MlqJ3cAE) by the YouTube tech community.
+```bash
+git clone https://github.com/shushi2369/TimeLedger.git
+cd TimeLedger
+./gradlew :app:assembleDebug
+# 产物：app/build/outputs/apk/debug/app-debug.apk
+```
 
-<a href='https://play.google.com/store/apps/details?id=com.ivy.wallet&utm_source=github&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="323" height="125"/></a>
+- 需要 **JDK 17**（Android Studio 自带）与 Android SDK 34；直接用 Android Studio 打开工程 Run 亦可
+- 工程模块较多，首次全量构建偏慢，之后增量构建很快
+- 建议：项目放在**纯 ASCII 路径**下构建；国内网络环境建议为 Gradle 配置 Maven 镜像或代理
 
-> Join our **[private Telegram Community](https://t.me/+ETavgioAvWg4NThk)**.
+技术栈：Kotlin 2.x ｜ Jetpack Compose ｜ Room ｜ Hilt ｜ WorkManager ｜ AlarmManager
 
-> To support our free open source project, please give it a star. ⭐
-> This means a lot to us. Thank you so much! [![GitHub Repo stars](https://img.shields.io/github/stars/Ivy-Apps/ivy-wallet?style=social)](https://github.com/Ivy-Apps/ivy-wallet/stargazers)
+架构说明：基于 [Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet) 的模块化 Compose 架构做增量开发，不改基座存量模块；时间管理为独立模块 `:feature:timetrack`，使用**独立 Room 小库**（`timetrack.db`），升级零迁移风险。
 
-## Project Requirements
+## 🙏 致谢与开源协议
 
-- Java 17+
-- The **latest stable** Android Studio (for easy install use [JetBrains Toolbox](https://www.jetbrains.com/toolbox-app/))
+本项目基于 **[Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet)**（GPL-3.0，2024-11 归档后由社区 fork 续命）二次开发，依 **GPL-3.0** 协议整体开源，在此感谢原作者与社区贡献者。
 
-### Initialize the project
+| 项目 | 协议 | 用途 |
+|------|------|------|
+| [Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet) | GPL-3.0 | 记账基座 |
+| [Android-SimpleTimeTracker](https://github.com/Razeeman/Android-SimpleTimeTracker) | GPL-3.0 | 时间模块交互参考 |
+| [HowToLiveBetter](https://github.com/eternity4719/HowToLiveBetter) | Unlicense | 人生指南内容 |
+| [tickle-android](https://github.com/wangdachui886/tickle-android) | Apache-2.0 | 快速记账交互参考 |
 
-**1. Fork and clone the repo**
+本项目为独立作品，与上述项目官方无关。
 
-Instructions in [CONTRIBUTING.md](./CONTRIBUTING.md).
+## 📄 License
 
-### Need help?
-
-Join our Telegram community and drop a message in the "Development" topic.
-
-[![Telegram Group](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/+ETavgioAvWg4NThk)
-
-## Learning Materials
-
-Ivy Wallet is a great place to code and learn. That's why we also link to great learning materials (books, articles, videos), check them out in **[docs/resources 📚](docs/resources/)**.
-
-Make sure to check out our short **[Developer Guidelines 🏗️](docs/Guidelines.md)** to learn more about the technical side of the Ivy Wallet.
-
-## Tech Stack
-
-### Core
-
-- 100% [Kotlin](https://kotlinlang.org/)
-- 100% [Jetpack Compose](https://developer.android.com/jetpack/compose)
-- [Material3 design](https://m3.material.io/) (UI components)
-- [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html) (structured concurrency)
-- [Kotlin Flow](https://kotlinlang.org/docs/flow.html) (reactive data stream)
-- [Hilt](https://dagger.dev/hilt/) (DI)
-- [ArrowKt](https://arrow-kt.io/) (functional programming)
-
-
-### Testing
-- [JUnit4](https://github.com/junit-team/junit4) (test framework, compatible with Android)
-- [Kotest](https://kotest.io/) (unit test assertions)
-- [Paparazzi](https://github.com/cashapp/paparazzi) (screenshot testing)
-
-### Local Persistence
-- [DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (key-value storage)
-- [Room DB](https://developer.android.com/training/data-storage/room) (SQLite ORM)
-
-### Networking
-- [Ktor client](https://ktor.io/docs/getting-started-ktor-client.html) (HTTP client)
-- [Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization) (JSON serialization)
-
-### Build & CI
-- [Gradle KTS](https://docs.gradle.org/current/userguide/kotlin_dsl.html) (Kotlin DSL)
-- [Gradle convention plugins](https://docs.gradle.org/current/samples/sample_convention_plugins.html) (build logic)
-- [Gradle version catalogs](https://developer.android.com/build/migrate-to-catalogs) (dependencies versions)
-- [GitHub Actions](https://github.com/Ivy-Apps/ivy-wallet/actions) (CI/CD)
-- [Fastlane](https://fastlane.tools/) (uploads the app to the Google Play Store)
-
-### Other
-- [Firebase Crashlytics](https://firebase.google.com/products/crashlytics) (stability monitoring)
-- [Timber](https://github.com/JakeWharton/timber) (logging)
-- [Detekt](https://github.com/detekt/detekt) (linter)
-- [Ktlint](https://github.com/pinterest/ktlint) (linter)
-- [Slack's compose-lints](https://slackhq.github.io/compose-lints/) (linter)
-
-## Contribute
-
-**Want to contribute?** See **[CONTRIBUTING.md](/CONTRIBUTING.md)** [![Fork Ivy Wallet](https://img.shields.io/github/forks/Ivy-Apps/ivy-wallet?logo=github&style=social)](https://github.com/Ivy-Apps/ivy-wallet/fork)
-
-### Contributors Wall:
-
-<a href="https://github.com/ILIYANGERMANOV/ivy-wallet/graphs/contributors">
-  <img alt="contributors graph" src="https://contrib.rocks/image?repo=Ivy-Apps/ivy-wallet" />
-</a>
-<br>
-<br>
-
-_Note: It may take up to 24 hours for the [contrib.rocks](https://contrib.rocks/preview?repo=Ivy-Apps%2Fivy-wallet) plugin to update._ 
-
-**P.S.** You'll also be recognized in a special "Contributors" section. We salute you! 👏
-
-## Creative Contributors
-
-Folks that helped Ivy Wallet in a non-dev creative ways that can't be captured on GitHub.
-
-### Creative Contributors Wall:
-
-<!-- <div align="center">
-  <a href="URL_TO_CONTRIBUTION">
-    <img src="URL_TO_PERSONS_PHOTO" width="100px;" alt="PERSON'S PHOTO"/><br>
-    <strong>USERNAME</strong><br>
-    <small>MESSAGE_FOR_THEIR_CONTRIBUTION</small>
-  </a>
-</div> -->
-
-<div style="text-align: center">
-    <img src="https://avatars.githubusercontent.com/u/62771583?v=4" width="100px;" alt="Stefan Ilijev - Desinger"/><br>
-    <strong>Stefan Ilijev</strong><br>
-    <small>Co-founder and designer of Ivy Wallet. Created the <a href="https://www.figma.com/file/kSwIa07jcHEHZXo6rzx7dn/Design-System?node-id=0%3A1&mode=dev">Ivy design system</a>.</small>
-    <br/>
-    <br/>
-</div>
-
-<div style="text-align: center">
-    <img src="https://avatars.githubusercontent.com/u/86833171?v=4" width="100px;" alt="Aditya [ADX]"/><br>
-    <strong><a href="https://github.com/adx69" >Aditya</a> </strong><br>
-    <br/>
-</div>
-
-<div style="text-align: center">
-    <img src="https://avatars.githubusercontent.com/u/130169485?v=4" width="100px;" alt="Shymom [SSI]"/><br>
-    <strong><a href="https://github.com/SHYMOM" >Shymom</a> </strong><br>
-    <br/>
-</div>
-
-
-## Community Projects
-
-> ⚠️ Disclaimer: The community projects listed are independently developed and not affiliated with Ivy Apps Ltd. Consequently, we cannot vouch for their functionality, security or intentions. Your engagement with these projects is solely at your own discretion and risk. Ivy Apps Ltd explicitly disclaims any warranties, express or implied, and shall not be held liable for any damages or losses resulting from the use of these community-developed projects.
-> 
-### [ivy-wallet-web](https://github.com/pratikkabade/ivy-wallet-web) by [Pratik Kabade](https://github.com/pratikkabade)
-
-This community-developed project allows users to conveniently access Ivy Wallet through their **web browsers**, ensuring a smooth experience across multiple platforms.
-- [GitHub URL](https://github.com/pratikkabade/ivy-wallet-web)
-- [Web app URL](https://ivy-wallet-web.vercel.app/)
+[GPL-3.0](LICENSE)。基于本项目的二次分发须同样以 GPL-3.0 开源，并保留原仓库版权声明。
