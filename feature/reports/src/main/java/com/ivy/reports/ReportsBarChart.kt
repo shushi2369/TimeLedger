@@ -119,7 +119,9 @@ fun ReportsBarChart(
                         index % 5 == 0 ||
                         index == days.size - 1
                 Text(
-                    text = if (show) "${entry.first.monthValue}" else "",
+                    text = if (show)
+                        "${if (monthlyGranularity) entry.first.monthValue else entry.first.dayOfMonth}"
+                    else "",
                     style = UI.typo.c.style(
                         color = UI.colors.pureInverse.copy(alpha = 0.4f)
                     ).copy(fontSize = 9.sp),

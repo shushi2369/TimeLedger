@@ -198,8 +198,13 @@ private fun BoxWithConstraintsScope.UI(
                 )
 
                 Text(
-                    text = if (state.yearMode) "${state.selectedYear}年"
-                    else "${state.selectedYear}年${state.selectedMonth}月",
+                    text = when {
+                        state.filter?.period == null -> "全部时间"
+                        state.filter?.period?.lastNRange != null -> "自定义区间"
+                        state.filter?.period?.fromToRange != null && !state.yearMode -> "自定义区间"
+                        state.yearMode -> "${state.selectedYear}年"
+                        else -> "${state.selectedYear}年${state.selectedMonth}月"
+                    },
                     style = UI.typo.b2.style(
                         fontWeight = FontWeight.ExtraBold,
                         color = UI.colors.primary
@@ -227,7 +232,8 @@ private fun BoxWithConstraintsScope.UI(
 
             // 月/年选择对话框
             if (periodPickerVisible) {
-                val currentYear = state.selectedYear
+                // 对话框本地年份：◀▶ 只改对话框内显示；直接发 OnPeriodYearPicked 会让月模式用户误跳年模式
+                var dialogYear by remember { mutableStateOf(state.selectedYear) }
                 AlertDialog(
                     onDismissRequest = { periodPickerVisible = false },
                     title = { Text("查看期间") },
@@ -239,7 +245,7 @@ private fun BoxWithConstraintsScope.UI(
                                     onClick = {
                                         onEventHandler.invoke(
                                             ReportScreenEvent.OnPeriodMonthPicked(
-                                                currentYear, state.selectedMonth
+                                                dialogYear, state.selectedMonth
                                             )
                                         )
                                     },
@@ -248,7 +254,7 @@ private fun BoxWithConstraintsScope.UI(
                                 androidx.compose.material3.FilterChip(
                                     selected = state.yearMode,
                                     onClick = {
-                                        onEventHandler.invoke(ReportScreenEvent.OnPeriodYearPicked(currentYear))
+                                        onEventHandler.invoke(ReportScreenEvent.OnPeriodYearPicked(dialogYear))
                                     },
                                     label = { Text("按年") }
                                 )
@@ -256,7 +262,7 @@ private fun BoxWithConstraintsScope.UI(
 
                             Spacer(Modifier.height(12.dp))
 
-                            // 年份切换
+                            // 年份切换（仅对话框内）
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
@@ -265,22 +271,18 @@ private fun BoxWithConstraintsScope.UI(
                                 Text(
                                     text = "◀",
                                     modifier = Modifier
-                                        .clickable {
-                                            onEventHandler.invoke(ReportScreenEvent.OnPeriodYearPicked(currentYear - 1))
-                                        }
+                                        .clickable { dialogYear -= 1 }
                                         .padding(8.dp)
                                 )
                                 Text(
-                                    text = "$currentYear 年",
+                                    text = "$dialogYear 年",
                                     style = UI.typo.b2.style(fontWeight = FontWeight.Bold),
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                                 Text(
                                     text = "▶",
                                     modifier = Modifier
-                                        .clickable {
-                                            onEventHandler.invoke(ReportScreenEvent.OnPeriodYearPicked(currentYear + 1))
-                                        }
+                                        .clickable { dialogYear += 1 }
                                         .padding(8.dp)
                                 )
                             }
@@ -296,8 +298,9 @@ private fun BoxWithConstraintsScope.UI(
                                         for (col in 0..3) {
                                             val m = row * 4 + col + 1
                                             if (m <= 12) {
-                                                val selected = state.selectedMonth == m &&
-                                                        state.selectedYear == currentYear
+                                                val selected = !state.yearMode &&
+                                                        state.selectedMonth == m &&
+                                                        state.selectedYear == dialogYear
                                                 Text(
                                                     text = "${m}月",
                                                     style = UI.typo.b2.style(
@@ -311,7 +314,7 @@ private fun BoxWithConstraintsScope.UI(
                                                         )
                                                         .clickable {
                                                             onEventHandler.invoke(
-                                                                ReportScreenEvent.OnPeriodMonthPicked(currentYear, m)
+                                                                ReportScreenEvent.OnPeriodMonthPicked(dialogYear, m)
                                                             )
                                                             periodPickerVisible = false
                                                         }

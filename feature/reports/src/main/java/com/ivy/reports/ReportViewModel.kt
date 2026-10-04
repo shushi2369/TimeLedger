@@ -182,7 +182,11 @@ class ReportViewModel @Inject constructor(
     override fun onEvent(event: ReportScreenEvent) {
         viewModelScope.launch(Dispatchers.Default) {
             when (event) {
-                is ReportScreenEvent.OnFilter -> setFilter(event.filter)
+                is ReportScreenEvent.OnFilter -> {
+                    // 筛选浮层可改期间：反同步期间条显示状态，避免 ◀▶ 基于过期年月跳转
+                    syncPeriodDisplay(event.filter)
+                    setFilter(event.filter)
+                }
                 is ReportScreenEvent.OnPeriodPrevious -> shiftPeriod(-1)
                 is ReportScreenEvent.OnPeriodNext -> shiftPeriod(1)
                 is ReportScreenEvent.OnPeriodMonthPicked -> pickMonth(event.year, event.month)
@@ -267,6 +271,36 @@ class ReportViewModel @Inject constructor(
             if (m > 12) { m = 1; y += 1 }
             if (m < 1) { m = 12; y -= 1 }
             pickMonth(y, m)
+        }
+    }
+
+    /**
+     * 从筛选器的期间反推期间条显示状态：月期间→月模式；全年 fromToRange→年模式；
+     * 自定义区间/近N天→退出年模式（界面显示"自定义区间"占位，◀▶ 在此期间不映射到具体年月）。
+     */
+    private fun syncPeriodDisplay(filterValue: ReportFilter?) {
+        val period = filterValue?.period ?: return
+        val monthPeriod = period.month
+        val range = period.fromToRange
+        when {
+            monthPeriod != null -> {
+                yearMode = false
+                selectedMonth = monthPeriod.monthValue
+                period.year?.let { selectedYear = it }
+            }
+            range != null -> {
+                val fromUtc = range.from?.atZone(ZoneId.of("UTC"))
+                val toUtc = range.to?.atZone(ZoneId.of("UTC"))
+                val isFullYear = fromUtc != null &&
+                        fromUtc.monthValue == 1 && fromUtc.dayOfMonth == 1 &&
+                        toUtc?.let { it.monthValue == 12 && it.dayOfMonth == 31 } == true
+                if (isFullYear) {
+                    yearMode = true
+                    selectedYear = fromUtc.year
+                } else {
+                    yearMode = false
+                }
+            }
         }
     }
 

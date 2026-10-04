@@ -52,12 +52,16 @@ internal fun CategoryBreakdownSection(
 ) {
     var incomeMode by remember { mutableStateOf(false) }
 
-    val shares = remember(history, categories, incomeMode) {
-        categoryShares(history, categories, if (incomeMode) TransactionType.INCOME else TransactionType.EXPENSE)
+    // 两种类型都先算好：任一有数据就渲染整块，避免切到空类型时（含切换 chips）整体消失无法切回
+    val expenseShares = remember(history, categories) {
+        categoryShares(history, categories, TransactionType.EXPENSE)
     }
-    if (shares.isEmpty()) return
+    val incomeShares = remember(history, categories) {
+        categoryShares(history, categories, TransactionType.INCOME)
+    }
+    if (expenseShares.isEmpty() && incomeShares.isEmpty()) return
 
-    val total = shares.sumOf { it.amount }
+    val shares = if (incomeMode) incomeShares else expenseShares
     val accent = if (incomeMode) UI.colors.green else UI.colors.primary
 
     ArkStaggeredIn(index = 1) {
@@ -114,72 +118,88 @@ internal fun CategoryBreakdownSection(
 
             Spacer(Modifier.height(12.dp))
 
-            // 环形扇形图（中心 = 总额）
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.size(170.dp)) {
-                    var startAngle = -90f
-                    shares.forEach { share ->
-                        val sweep = (share.pct / 100f * 360f).coerceAtLeast(0.5f)
-                        drawArc(
-                            color = share.color,
-                            startAngle = startAngle,
-                            sweepAngle = sweep,
-                            useCenter = false,
-                            style = Stroke(width = 34.dp.toPx(), cap = StrokeCap.Butt)
+            if (shares.isEmpty()) {
+                // 该类型无数据：占位提示，chips 保留可切回
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (incomeMode) "该期间暂无收入记录" else "该期间暂无支出记录",
+                        style = UI.typo.b2.style(color = UI.colors.gray),
+                        modifier = Modifier.padding(vertical = 48.dp)
+                    )
+                }
+            } else {
+                val total = shares.sumOf { it.amount }
+
+                // 环形扇形图（中心 = 总额）
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Canvas(modifier = Modifier.size(170.dp)) {
+                        var startAngle = -90f
+                        shares.forEach { share ->
+                            val sweep = (share.pct / 100f * 360f).coerceAtLeast(0.5f)
+                            drawArc(
+                                color = share.color,
+                                startAngle = startAngle,
+                                sweepAngle = sweep,
+                                useCenter = false,
+                                style = Stroke(width = 34.dp.toPx(), cap = StrokeCap.Butt)
+                            )
+                            startAngle += sweep
+                        }
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = if (incomeMode) "收入" else "支出",
+                            style = UI.typo.c.style(color = UI.colors.gray)
                         )
-                        startAngle += sweep
+                        Text(
+                            text = total.format(currency),
+                            style = UI.typo.b2.style(fontWeight = FontWeight.ExtraBold)
+                        )
                     }
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = if (incomeMode) "收入" else "支出",
-                        style = UI.typo.c.style(color = UI.colors.gray)
-                    )
-                    Text(
-                        text = total.format(currency),
-                        style = UI.typo.b2.style(fontWeight = FontWeight.ExtraBold)
-                    )
-                }
-            }
 
-            Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-            // 明细列表：色点 + 分类名 + 百分比 + 金额
-            shares.forEach { share ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
+                // 明细列表：色点 + 分类名 + 百分比 + 金额
+                shares.forEach { share ->
+                    Row(
                         modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(share.color)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = share.name,
-                        style = UI.typo.b2.style(),
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "${"%.1f".format(share.pct)}%",
-                        style = UI.typo.c.style(
-                            fontWeight = FontWeight.Bold,
-                            color = UI.colors.gray
-                        ),
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                    Text(
-                        text = share.amount.format(currency),
-                        style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
-                    )
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(share.color)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = share.name,
+                            style = UI.typo.b2.style(),
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "${"%.1f".format(share.pct)}%",
+                            style = UI.typo.c.style(
+                                fontWeight = FontWeight.Bold,
+                                color = UI.colors.gray
+                            ),
+                            modifier = Modifier.padding(end = 12.dp)
+                        )
+                        Text(
+                            text = share.amount.format(currency),
+                            style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 }
             }
         }
