@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -46,6 +48,8 @@ import com.ivy.design.l0_system.style
 import com.ivy.data.model.Category
 import com.ivy.navigation.QuickEntryScreen
 import com.ivy.navigation.navigation
+import com.ivy.legacy.arkui.ArkStaggeredIn
+import com.ivy.legacy.arkui.arkPressScale
 import com.ivy.legacy.utils.currencyDisplay
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.components.getCustomIconIdS
@@ -122,7 +126,11 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                     showAddCategory = true
                 }
             }
-            items(items = state.categories, key = { "${it.id.value}-${state.categoriesVersion}" }) { category ->
+            itemsIndexed(
+                items = state.categories,
+                key = { _, category -> "${category.id.value}-${state.categoriesVersion}" }
+            ) { index, category ->
+                ArkStaggeredIn(index = index) {
                 QuickCategoryCell(
                     name = category.name.value,
                     color = category.color.value.toComposeColor(),
@@ -138,6 +146,7 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                     selected = state.selectedCategoryId == category.id.value
                 ) {
                     viewModel.onCategoryClick(category.id.value)
+                }
                 }
             }
         }

@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +44,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.legacy.arkui.ArkStaggeredIn
+import com.ivy.legacy.arkui.rememberArkPulse
 import com.ivy.timetrack.data.TodoEntity
 import com.ivy.timetrack.data.TimeActivityEntity
 import com.ivy.wallet.ui.theme.Gradient
@@ -207,12 +210,13 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
         } else {
-            todos.forEach { todo ->
+            todos.forEachIndexed { index, todo ->
                 TodoRow(
                     todo = todo,
                     onToggle = { viewModel.toggleTodo(todo.id) },
                     onDelete = { viewModel.deleteTodo(todo.id) },
                     onRemind = { todoRemindTarget = todo },
+                    index = index,
                 )
             }
 
@@ -235,12 +239,13 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
                     )
                 }
                 if (todosDoneExpanded) {
-                    todosDone.forEach { todo ->
+                    todosDone.forEachIndexed { index, todo ->
                         TodoRow(
                             todo = todo,
                             onToggle = { viewModel.toggleTodo(todo.id) },
                             onDelete = { viewModel.deleteTodo(todo.id) },
                             onRemind = { todoRemindTarget = todo },
+                            index = index,
                         )
                     }
                 }
@@ -1065,18 +1070,27 @@ private fun TodoRow(
     onToggle: () -> Unit,
     onDelete: () -> Unit,
     onRemind: () -> Unit,
+    index: Int = 0,
 ) {
     val dim = todo.done
+    val pulse = rememberArkPulse()
+    ArkStaggeredIn(index = index) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 红(未完成)/绿(完成) 点，点击切换
+        // 红(未完成，呼吸脉动)/绿(完成) 点，点击切换
         Box(
             modifier = Modifier
                 .size(14.dp)
+                .graphicsLayer {
+                    if (!todo.done) {
+                        scaleX = pulse
+                        scaleY = pulse
+                    }
+                }
                 .clip(CircleShape)
                 .background(
                     if (todo.done) Color(0xFF2FAC78) else Color(0xFFD83C3C)
@@ -1134,6 +1148,7 @@ private fun TodoRow(
                 .clickable(onClick = onDelete)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         )
+    }
     }
 }
 
