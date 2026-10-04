@@ -73,6 +73,8 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showAddCategory by remember { mutableStateOf(false) }
+    var oneLineExpanded by remember { mutableStateOf(false) }
+    var oneLineText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -94,6 +96,91 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                 text = "取消",
                 style = UI.typo.b2.style(color = UI.colors.gray)
             )
+        }
+
+        // 一句话记账（折叠入口）
+        if (!oneLineExpanded) {
+            Text(
+                text = "✎ 一句话记账，如：昨天打车12元",
+                style = UI.typo.c.style(
+                    fontWeight = FontWeight.Bold,
+                    color = UI.colors.primary
+                ),
+                modifier = Modifier
+                    .padding(horizontal = 24.dp, vertical = 2.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable { oneLineExpanded = true }
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clip(UI.shapes.r4)
+                    .background(UI.colors.medium)
+                    .padding(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = oneLineText,
+                    onValueChange = { oneLineText = it },
+                    placeholder = { Text("如：昨天打车12元", style = UI.typo.b2) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+
+                val parsed = viewModel.parseOneLine(oneLineText)
+                val preview = when {
+                    oneLineText.isBlank() -> "输入一句话，自动识别金额/日期/分类"
+                    parsed == null -> "没识别出金额，试试「12元」「35.5块」"
+                    else -> buildString {
+                        append("→ ${if (parsed.isIncome) "收入" else "支出"} ")
+                        append(java.text.DecimalFormat("#,##0.00").format(parsed.amount))
+                        append(" 元 · ")
+                        append(
+                            when (parsed.date) {
+                                java.time.LocalDate.now() -> "今天"
+                                java.time.LocalDate.now().minusDays(1) -> "昨天"
+                                java.time.LocalDate.now().minusDays(2) -> "前天"
+                                else -> "${parsed.date.monthValue}月${parsed.date.dayOfMonth}日"
+                            }
+                        )
+                        parsed.categoryName?.let { append(" · $it") }
+                    }
+                }
+                Text(
+                    text = preview,
+                    style = UI.typo.c.style(
+                        color = when {
+                            oneLineText.isBlank() -> UI.colors.gray
+                            parsed == null -> Color(0xFFE53935)
+                            else -> UI.colors.primary
+                        },
+                        fontWeight = if (parsed != null) FontWeight.Bold else FontWeight.Normal
+                    )
+                )
+
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "记下来",
+                    style = UI.typo.b2.style(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (parsed != null) UI.colors.primary else UI.colors.gray
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .clip(UI.shapes.rFull)
+                        .clickable(enabled = parsed != null) {
+                            val p = parsed ?: return@clickable
+                            viewModel.saveOneLine(p) {
+                                oneLineExpanded = false
+                                oneLineText = ""
+                                nav.back()
+                            }
+                        }
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
         }
 
         // 类别网格（第一格固定为"未分类"）

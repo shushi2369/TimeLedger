@@ -175,6 +175,56 @@ class QuickEntryViewModel @Inject constructor(
         note = value
     }
 
+    /** 一句话记账：解析（实时预览用）。 */
+    fun parseOneLine(text: String): OneLineParser.Parsed? =
+        OneLineParser.parse(text, categories, java.time.LocalDate.now())
+
+    /** 一句话记账：保存解析结果。 */
+    fun saveOneLine(parsed: OneLineParser.Parsed, onDone: () -> Unit) {
+        if (saving) return
+        saving = true
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val account = accountDao.findAll()
+                        .map { it.toLegacyDomain() }
+                        .firstOrNull()
+                        ?: createDefaultAccount(baseCurrency)
+
+                    val legacy = Transaction(
+                        accountId = account.id,
+                        type = if (parsed.isIncome) TransactionType.INCOME else TransactionType.EXPENSE,
+                        amount = java.math.BigDecimal.valueOf(parsed.amount),
+                        categoryId = parsed.categoryId,
+                        title = null,
+                        dateTime = with(timeConverter) {
+                            parsed.date.atTime(java.time.LocalTime.now()).toUTC()
+                        },
+                    )
+                    with(transactionMapper) {
+                        legacy.toEntity().toDomain().getOrNull()?.let {
+                            transactionRepository.save(it)
+                        }
+                    }
+                }
+
+                val direction = if (parsed.isIncome) "收入" else "支出"
+                val amountText = java.text.DecimalFormat("#,##0.00").format(parsed.amount)
+                val catText = parsed.categoryName?.let { " · $it" }.orEmpty()
+                ivyWalletCtx.showSnackbar(message = "已记录 $direction $amountText 元$catText")
+
+                onDone()
+            } finally {
+                saving = false
+                input = ""
+                note = ""
+                selectedCategoryId = null
+                selectedTagIds = emptySet()
+                selectedDate = null
+            }
+        }
+    }
+
     fun finish(onDone: () -> Unit) {
         if (saving) return
         val result = evaluateExpression(input.trimEnd('+', '-', '×', '÷', '.')) ?: return
