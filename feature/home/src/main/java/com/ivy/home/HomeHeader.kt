@@ -288,26 +288,40 @@ fun CashFlowInfo(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 12.dp)
         ) {
             Row(modifier = Modifier.weight(1f)) {
                 val reportNav = navigation()
                 IvyOutlinedButton(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     iconStart = R.drawable.ic_custom_stats_m,
-                    text = "报表分析",
+                    text = "报表",
                     solidBackground = true,
                 ) {
                     reportNav.navigateTo(ReportScreen)
                 }
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Row(modifier = Modifier.weight(1f)) {
+                val pieNav = navigation()
+                IvyOutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    iconStart = R.drawable.ic_vue_chart_chart,
+                    text = "占比",
+                    solidBackground = true,
+                ) {
+                    pieNav.navigateTo(
+                        com.ivy.navigation.PieChartStatisticScreen(
+                            type = com.ivy.base.model.TransactionType.EXPENSE
+                        )
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             Row(modifier = Modifier.weight(1f)) {
                 val budgetNav = navigation()
                 IvyOutlinedButton(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     iconStart = R.drawable.home_more_menu_budgets,
                     text = "预算",
                     solidBackground = true,
