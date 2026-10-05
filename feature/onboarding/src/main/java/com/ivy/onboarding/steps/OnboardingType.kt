@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,7 +41,6 @@ fun OnboardingType(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
@@ -77,10 +74,11 @@ fun OnboardingType(
             )
         )
 
-        Spacer(Modifier.weight(1f))
-
         Image(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                // 小屏保底：插图占剩余空间但不放大，防止下方按钮被挤出屏幕
+                .weight(1f, fill = false),
             painter = painterResource(id = R.drawable.onboarding_illustration_import),
             contentDescription = "import illustration"
         )
