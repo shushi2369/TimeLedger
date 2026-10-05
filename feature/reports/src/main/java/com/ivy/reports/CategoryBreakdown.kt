@@ -1,5 +1,8 @@
 package com.ivy.reports
 
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +38,8 @@ import com.ivy.data.model.Category
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.arkui.ArkStaggeredIn
+import com.ivy.legacy.arkui.arkCornerBrackets
+import com.ivy.legacy.arkui.rememberArkCountUp
 import com.ivy.legacy.utils.format
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.ImmutableList
@@ -64,6 +70,15 @@ internal fun CategoryBreakdownSection(
     val shares = if (incomeMode) incomeShares else expenseShares
     val accent = if (incomeMode) UI.colors.green else UI.colors.primary
 
+    // 环形图绘制动画：数据或收支切换变化时从 0 重播（作战结果数据可视化感）
+    var donutProgress by remember { mutableStateOf(0f) }
+    LaunchedEffect(shares) {
+        donutProgress = 0f
+        animate(0f, 1f, animationSpec = tween(600, easing = EaseOutCubic)) { v, _ ->
+            donutProgress = v
+        }
+    }
+
     ArkStaggeredIn(index = 1) {
         Column(
             modifier = Modifier
@@ -71,6 +86,12 @@ internal fun CategoryBreakdownSection(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .clip(UI.shapes.r4)
                 .background(UI.colors.pure)
+                .arkCornerBrackets(
+                    color = accent.copy(alpha = 0.30f),
+                    strokeWidthDp = 2.dp,
+                    armLengthDp = 22.dp,
+                    insetDp = 5.dp,
+                )
                 .padding(vertical = 16.dp)
         ) {
             // 标题 + 收支切换
@@ -132,8 +153,9 @@ internal fun CategoryBreakdownSection(
                 }
             } else {
                 val total = shares.sumOf { it.amount }
+                val animatedTotal = rememberArkCountUp(total)
 
-                // 环形扇形图（中心 = 总额）
+                // 环形扇形图（中心 = 总额；绘制进度动画）
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -141,7 +163,8 @@ internal fun CategoryBreakdownSection(
                     Canvas(modifier = Modifier.size(170.dp)) {
                         var startAngle = -90f
                         shares.forEach { share ->
-                            val sweep = (share.pct / 100f * 360f).coerceAtLeast(0.5f)
+                            val sweep = (share.pct / 100f * 360f * donutProgress)
+                                .coerceAtLeast(0.5f * donutProgress)
                             drawArc(
                                 color = share.color,
                                 startAngle = startAngle,
@@ -149,7 +172,7 @@ internal fun CategoryBreakdownSection(
                                 useCenter = false,
                                 style = Stroke(width = 34.dp.toPx(), cap = StrokeCap.Butt)
                             )
-                            startAngle += sweep
+                            startAngle += share.pct / 100f * 360f
                         }
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -158,7 +181,7 @@ internal fun CategoryBreakdownSection(
                             style = UI.typo.c.style(color = UI.colors.gray)
                         )
                         Text(
-                            text = total.format(currency),
+                            text = animatedTotal.format(currency),
                             style = UI.typo.b2.style(fontWeight = FontWeight.ExtraBold)
                         )
                     }
@@ -166,39 +189,41 @@ internal fun CategoryBreakdownSection(
 
                 Spacer(Modifier.height(12.dp))
 
-                // 明细列表：色点 + 分类名 + 百分比 + 金额
-                shares.forEach { share ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
+                // 明细列表：色点 + 分类名 + 百分比 + 金额（交错入场）
+                shares.forEachIndexed { index, share ->
+                    ArkStaggeredIn(index = index + 1, stepMillis = 30L) {
+                        Row(
                             modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(share.color)
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            text = share.name,
-                            style = UI.typo.b2.style(),
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1
-                        )
-                        Text(
-                            text = "${"%.1f".format(share.pct)}%",
-                            style = UI.typo.c.style(
-                                fontWeight = FontWeight.Bold,
-                                color = UI.colors.gray
-                            ),
-                            modifier = Modifier.padding(end = 12.dp)
-                        )
-                        Text(
-                            text = share.amount.format(currency),
-                            style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
-                        )
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(share.color)
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                text = share.name,
+                                style = UI.typo.b2.style(),
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1
+                            )
+                            Text(
+                                text = "${"%.1f".format(share.pct)}%",
+                                style = UI.typo.c.style(
+                                    fontWeight = FontWeight.Bold,
+                                    color = UI.colors.gray
+                                ),
+                                modifier = Modifier.padding(end = 12.dp)
+                            )
+                            Text(
+                                text = share.amount.format(currency),
+                                style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
+                            )
+                        }
                     }
                 }
             }

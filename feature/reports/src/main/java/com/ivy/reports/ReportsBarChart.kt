@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +27,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.model.TransactionType
@@ -42,8 +50,19 @@ fun ReportsBarChart(
     modifier: Modifier = Modifier,
     monthlyGranularity: Boolean = false,
 ) {
-    val days = if (monthlyGranularity) aggregateByMonth(history) else aggregateByDay(history)
+    val days = remember(history, monthlyGranularity) {
+        if (monthlyGranularity) aggregateByMonth(history) else aggregateByDay(history)
+    }
     if (days.isEmpty()) return
+
+    // 柱生长动画：数据变化时从 0 重播（按数据组数分步交错）
+    var growProgress by remember { mutableStateOf(0f) }
+    LaunchedEffect(days) {
+        growProgress = 0f
+        animate(0f, 1f, animationSpec = tween(500, easing = EaseOutCubic)) { v, _ ->
+            growProgress = v
+        }
+    }
 
     Column(
         modifier = modifier
@@ -86,24 +105,33 @@ fun ReportsBarChart(
                 val (income, expense) = entry.second
                 val groupStart = groupWidth * index
                 val groupCenter = groupStart + groupWidth / 2
+                // 交错生长：每组按 index 延迟 30ms 比例展开
+                val groupProgress = ((growProgress * days.size) - index).coerceIn(0f, 1f)
 
                 if (income > 0) {
-                    val h = (income / maxAmount * usableHeight).toFloat().coerceAtLeast(4f)
-                    drawRoundRect(
-                        color = Green,
-                        topLeft = Offset(groupCenter - barWidth - 2.dp.toPx(), size.height - h),
-                        size = Size(barWidth, h),
-                        cornerRadius = corner
-                    )
+                    // 小金额柱至少 4px 可见（动画中随进度缩放，避免开场闪现）
+                    val h = (income / maxAmount * usableHeight * groupProgress)
+                        .toFloat().coerceAtLeast(4f * groupProgress)
+                    if (h > 0f) {
+                        drawRoundRect(
+                            color = Green,
+                            topLeft = Offset(groupCenter - barWidth - 2.dp.toPx(), size.height - h),
+                            size = Size(barWidth, h),
+                            cornerRadius = corner
+                        )
+                    }
                 }
                 if (expense > 0) {
-                    val h = (expense / maxAmount * usableHeight).toFloat().coerceAtLeast(4f)
-                    drawRoundRect(
-                        color = expenseBarColor,
-                        topLeft = Offset(groupCenter + 2.dp.toPx(), size.height - h),
-                        size = Size(barWidth, h),
-                        cornerRadius = corner
-                    )
+                    val h = (expense / maxAmount * usableHeight * groupProgress)
+                        .toFloat().coerceAtLeast(4f * groupProgress)
+                    if (h > 0f) {
+                        drawRoundRect(
+                            color = expenseBarColor,
+                            topLeft = Offset(groupCenter + 2.dp.toPx(), size.height - h),
+                            size = Size(barWidth, h),
+                            cornerRadius = corner
+                        )
+                    }
                 }
             }
         }

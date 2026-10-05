@@ -2,6 +2,8 @@ package com.ivy.wallet.ui.theme.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.utils.thenIf
+import com.ivy.legacy.arkui.arkPressScale
 import com.ivy.legacy.IvyWalletComponentPreview
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Green
@@ -41,14 +45,20 @@ fun IvyOutlinedButton(
     borderColor: Color = UI.colors.medium,
     textColor: Color = UI.colors.pureInverse,
     padding: Dp = 12.dp,
+    interactionSource: MutableInteractionSource? = null,
     onClick: () -> Unit,
 ) {
     val pure = UI.colors.pure
     val rFull = UI.shapes.rFull
     Row(
         modifier = modifier
+            .thenIf(interactionSource != null) {
+                arkPressScale(interactionSource!!)
+            }
             .clip(UI.shapes.rFull)
             .clickable(
+                interactionSource = interactionSource ?: remember { MutableInteractionSource() },
+                indication = LocalIndication.current,
                 onClick = onClick,
             )
             .defaultMinSize(minWidth, minHeight)

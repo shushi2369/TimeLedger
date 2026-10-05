@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +41,8 @@ import com.ivy.design.utils.thenIf
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.ui.component.transaction.TransactionsDividerLine
+import com.ivy.legacy.arkui.arkSweepShine
+import com.ivy.legacy.arkui.rememberArkCountUp
 import com.ivy.legacy.utils.clickableNoIndication
 import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.format
@@ -292,11 +296,13 @@ fun CashFlowInfo(
         ) {
             Row(modifier = Modifier.weight(1f)) {
                 val reportNav = navigation()
+                val reportSource = remember { MutableInteractionSource() }
                 IvyOutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
                     iconStart = R.drawable.ic_custom_stats_m,
                     text = "报表",
                     solidBackground = true,
+                    interactionSource = reportSource,
                 ) {
                     reportNav.navigateTo(ReportScreen)
                 }
@@ -304,11 +310,13 @@ fun CashFlowInfo(
             Spacer(modifier = Modifier.width(8.dp))
             Row(modifier = Modifier.weight(1f)) {
                 val pieNav = navigation()
+                val pieSource = remember { MutableInteractionSource() }
                 IvyOutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
                     iconStart = R.drawable.ic_vue_chart_chart,
                     text = "占比",
                     solidBackground = true,
+                    interactionSource = pieSource,
                 ) {
                     pieNav.navigateTo(
                         com.ivy.navigation.PieChartStatisticScreen(
@@ -320,11 +328,13 @@ fun CashFlowInfo(
             Spacer(modifier = Modifier.width(8.dp))
             Row(modifier = Modifier.weight(1f)) {
                 val budgetNav = navigation()
+                val budgetSource = remember { MutableInteractionSource() }
                 IvyOutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
                     iconStart = R.drawable.home_more_menu_budgets,
                     text = "预算",
                     solidBackground = true,
+                    interactionSource = budgetSource,
                 ) {
                     budgetNav.navigateTo(com.ivy.navigation.BudgetScreen)
                 }
@@ -425,6 +435,7 @@ private fun RowScope.HeaderCard(
             }
             .clip(UI.shapes.r4)
             .background(backgroundGradient.asHorizontalBrush())
+            .arkSweepShine()
             .testTag(testTag)
             .clickable(
                 onClick = onClick,
@@ -464,7 +475,7 @@ private fun RowScope.HeaderCard(
             Spacer(Modifier.width(20.dp))
 
             AmountCurrencyB1(
-                amount = amount,
+                amount = rememberArkCountUp(amount),
                 currency = currency,
                 textColor = textColor,
                 shortenBigNumbers = true,
