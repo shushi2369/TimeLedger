@@ -283,12 +283,21 @@ class TransactionRepository @Inject constructor(
 
     suspend fun deleteAllByAccountId(accountId: AccountId) {
         withContext(dispatchersProvider.io) {
+            // fork 修复：同步删除转入该账户的转账（见 WriteTransactionDao.deleteAllByToAccountId）
+            writeTransactionDao.deleteAllByToAccountId(accountId.value)
             writeTransactionDao.deleteAllByAccountId(accountId.value)
         }
     }
 
     suspend fun deletedByRecurringRuleIdAndNoDateTime(recurringRuleId: UUID) {
         withContext(dispatchersProvider.io) {
+            // fork 修复：批量删交易前清标签关联（规则删除/再生成路径，原产生孤儿关联）
+            transactionDao.findByRecurringRuleIdAndNoDateTime(recurringRuleId)
+                .forEach { entity ->
+                    tagRepository.deleteAssociationsFor(
+                        com.ivy.data.model.primitive.AssociationId(entity.id)
+                    )
+                }
             writeTransactionDao.deletedByRecurringRuleIdAndNoDateTime(recurringRuleId)
         }
     }

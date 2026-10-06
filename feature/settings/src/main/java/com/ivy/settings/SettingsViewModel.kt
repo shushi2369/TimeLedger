@@ -293,7 +293,14 @@ class SettingsViewModel @Inject constructor(
         ) { fileUri ->
             viewModelScope.launch(Dispatchers.IO) {
                 progressState.value = true
-                backupDataUseCase.exportToFile(zipFileUri = fileUri)
+                // fork 修复：磁盘满/SAF 授权失效原样穿透协程致崩溃，进度卡 true
+                val exportOk = runCatching {
+                    backupDataUseCase.exportToFile(zipFileUri = fileUri)
+                }.isSuccess
+                if (!exportOk) {
+                    progressState.value = false
+                    return@launch
+                }
                 progressState.value = false
 
                 sharedPrefs.putBoolean(SharedPrefs.DATA_BACKUP_COMPLETED, true)

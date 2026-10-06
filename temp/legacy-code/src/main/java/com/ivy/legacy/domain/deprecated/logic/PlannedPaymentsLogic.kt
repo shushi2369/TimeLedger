@@ -235,13 +235,15 @@ class PlannedPaymentsLogic @Inject constructor(
         skipTransaction: Boolean = false,
         onUpdateUI: suspend (paidTransactions: List<com.ivy.data.model.Transaction>) -> Unit
     ) {
-        val paidTransactions: List<com.ivy.data.model.Transaction> =
-            transactions.filter { it.settled }
+        // fork 修复：原 filter { it.settled } 与单条版语义相反（传入待付交易→空集合直接 return）
+        val paidTransactions: MutableList<com.ivy.data.model.Transaction> =
+            transactions.filter { !it.settled }.toMutableList()
 
         if (paidTransactions.isEmpty()) return
 
-        paidTransactions.map {
-            it.settleNow()
+        // fork 修复：原 map 结果被丢弃（入账副本没生效）
+        for (i in paidTransactions.indices) {
+            paidTransactions[i] = paidTransactions[i].settleNow()
         }
 
         val plannedPaymentRules = ioThread {
@@ -281,18 +283,19 @@ class PlannedPaymentsLogic @Inject constructor(
         skipTransaction: Boolean = false,
         onUpdateUI: suspend (paidTransactions: List<Transaction>) -> Unit
     ) {
+        // fork 修复：原 copy 结果被丢弃（保存的仍是未入账原件：dueDate 未清/dateTime=null）
         val paidTransactions =
-            transactions.filter { (it.dueDate == null || it.dateTime != null).not() }
+            transactions
+                .filter { (it.dueDate == null || it.dateTime != null).not() }
+                .map {
+                    it.copy(
+                        dueDate = null,
+                        dateTime = timeProvider.utcNow(),
+                        isSynced = false
+                    )
+                }
 
         if (paidTransactions.count() == 0) return
-
-        paidTransactions.map {
-            it.copy(
-                dueDate = null,
-                dateTime = timeProvider.utcNow(),
-                isSynced = false
-            )
-        }
 
         val plannedPaymentRules = ioThread {
             paidTransactions.map { transaction ->

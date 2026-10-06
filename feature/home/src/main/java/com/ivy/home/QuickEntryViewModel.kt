@@ -18,6 +18,7 @@ import com.ivy.data.model.TagId
 import com.ivy.data.model.primitive.AssociationId
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
+import com.ivy.base.legacy.refreshWidget
 import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
@@ -279,6 +280,10 @@ class QuickEntryViewModel @Inject constructor(
                         }
                     }
                 }
+
+                // fork 修复：保存成功后刷新桌面余额小部件（原仅撤销路径通知，小部件显示旧值）
+                refreshWidget(com.ivy.widget.balance.WalletBalanceWidgetReceiver::class.java)
+                ivyWalletCtx.notifyDataChanged()
 
                 // 全局 Snackbar：主页可见，支持撤销（闭包只捕获单例仓库，不依赖本 VM 生命周期）
                 val direction = if (result >= 0) "支出" else "收入"

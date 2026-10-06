@@ -9,6 +9,10 @@ import java.util.UUID
 
 @Dao
 interface TransactionDao {
+    // fork 修复：批量删交易前先查出 id 以清标签关联
+    @Query("SELECT * FROM transactions WHERE recurringRuleId = :ruleId AND dateTime IS NULL")
+    suspend fun findByRecurringRuleIdAndNoDateTime(ruleId: UUID): List<TransactionEntity>
+
     @Query("SELECT * FROM transactions WHERE isDeleted = 0 ORDER BY dateTime DESC, dueDate ASC")
     suspend fun findAll(): List<TransactionEntity>
 

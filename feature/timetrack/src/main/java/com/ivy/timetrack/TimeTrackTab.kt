@@ -119,6 +119,14 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
         Unit
     }
 
+    // fork 修复：进程被杀后前台服务不重启，计时中条目失去常驻提醒通知；
+    // 进入时间页检测到计时中即重挂（startForegroundService 幂等，仅刷新通知）
+    LaunchedEffect(Unit) {
+        todayEntries.firstOrNull { it.entry.endedAt == null }?.let { running ->
+            com.ivy.timetrack.TimerService.start(context, running.entry.startedAt)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

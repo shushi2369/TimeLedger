@@ -72,6 +72,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
@@ -400,7 +401,12 @@ class EditTransactionViewModel @Inject constructor(
         customExchangeRateState = if (transaction.toAccountId == null) {
             CustomExchangeRateState()
         } else {
-            val exchangeRate = transaction.toAmount / transaction.amount
+            // fork 修复：BigDecimal 默认 scale 相除遇无限小数/零金额抛异常，该笔交易从此打不开
+            val exchangeRate = if (transaction.amount.signum() == 0) {
+                BigDecimal.ONE
+            } else {
+                transaction.toAmount.divide(transaction.amount, 10, RoundingMode.HALF_UP)
+            }
             val toAccountCurrency =
                 accounts.find { acc -> acc.id == transaction.toAccountId }?.currency
             CustomExchangeRateState(

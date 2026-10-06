@@ -110,12 +110,12 @@ class RootViewModel @Inject constructor(
 
     @Suppress("SwallowedException")
     private fun handleSpecialStart(intent: Intent): Boolean {
-        val addTrnType: TransactionType? = try {
+        // fork 修复：exported 深链可被第三方塞恶意 extra，unparcel 抛 BadParcelableException/
+        // ClassCastException（RuntimeException）不被 IllegalArgumentException 捕获→远程崩溃。全段兜底。
+        val addTrnType: TransactionType? = runCatching {
             intent.getSerializableExtra(EXTRA_ADD_TRANSACTION_TYPE) as? TransactionType
                 ?: TransactionType.valueOf(intent.getStringExtra(EXTRA_ADD_TRANSACTION_TYPE) ?: "")
-        } catch (e: IllegalArgumentException) {
-            null
-        }
+        }.getOrNull()
 
         if (addTrnType != null) {
             nav.navigateTo(

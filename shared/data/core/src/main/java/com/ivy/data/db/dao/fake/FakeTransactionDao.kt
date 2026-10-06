@@ -25,6 +25,14 @@ class FakeTransactionDao : TransactionDao, WriteTransactionDao {
         return findAll().take(1)
     }
 
+    override suspend fun findByRecurringRuleIdAndNoDateTime(ruleId: java.util.UUID): List<TransactionEntity> {
+        return items.filter { !it.isDeleted && it.recurringRuleId == ruleId && it.dateTime == null }
+    }
+
+    override suspend fun deleteAllByToAccountId(accountId: java.util.UUID) {
+        items.removeAll { it.toAccountId == accountId }
+    }
+
     override suspend fun findAllByType(type: TransactionType): List<TransactionEntity> {
         return items.filter { !it.isDeleted && it.type == type }
             .sortedByDescending { it.dateTime }

@@ -124,7 +124,8 @@ class ExportCsvUseCase @Inject constructor(
         escapeSpecialChars()
     }
 
-    private fun String.escapeSpecialChars(): String = replace("\\", "")
+    // fork 修复：原无差别剥除反斜杠，含 \ 的商户名/备注导出即损坏（CSV 中反斜杠无特殊含义）
+    private fun String.escapeSpecialChars(): String = this
 
     private fun Transaction.toIvyCsvRow(): IvyCsvRow = when (this) {
         is Expense -> expenseCsvRow()

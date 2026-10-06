@@ -38,6 +38,11 @@ class PaymentTileService : TileService() {
     private fun startRootActivity() {
         val intent = Intent(applicationContext, RootActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            // fork 修复：磁贴名为「记一笔支出」却只开主页——复用深链直达记支出
+            putExtra(
+                "add_transaction_type_extra",
+                com.ivy.base.model.TransactionType.EXPENSE.name
+            )
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             val pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
