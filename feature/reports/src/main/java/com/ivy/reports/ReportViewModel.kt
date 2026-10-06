@@ -239,6 +239,13 @@ class ReportViewModel @Inject constructor(
 
             // fork 增强：无筛选器时默认"本月 + 全部类型/账户/类别"，报表打开即出图表（2026-09-27）
             if (filter == null) {
+                // fork 修复：默认期间与主页同口径（自定义月初的跨月窗口）——原 LocalDate.now 日历月
+                // 在 startDay=25、今天月初时打开报表为未来空期间
+                val currentPeriod = com.ivy.legacy.data.model.TimePeriod.currentMonth(
+                    ivyContext.startDayOfMonth
+                )
+                currentPeriod.month?.let { selectedMonth = it.monthValue }
+                currentPeriod.year?.let { selectedYear = it }
                 val defaultFilter = ReportFilter(
                     trnTypes = listOf(TransactionType.INCOME, TransactionType.EXPENSE),
                     period = TimePeriod(

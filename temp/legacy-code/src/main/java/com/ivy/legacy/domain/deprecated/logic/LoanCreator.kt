@@ -13,6 +13,7 @@ import javax.inject.Inject
 class LoanCreator @Inject constructor(
     private val dao: LoanDao,
     private val loanWriter: WriteLoanDao,
+    private val loanRecordWriter: com.ivy.data.db.dao.write.WriteLoanRecordDao,
 ) {
     suspend fun create(
         data: CreateLoanData,
@@ -79,6 +80,8 @@ class LoanCreator @Inject constructor(
     ) {
         try {
             ioThread {
+                // fork 修复：同步清分期记录
+                loanRecordWriter.deletedByLoanId(item.id)
                 loanWriter.deleteById(item.id)
             }
 

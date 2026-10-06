@@ -377,7 +377,8 @@ class LoanViewModel @Inject constructor(
             }
 
         lastSelectedId?.let { uuid ->
-            return accounts.find { it.id == uuid }
+            // fork 修复：上次选中的账户已删除时回退第一个账户（原返回 null，新增贷款无默认账户）
+            return accounts.find { it.id == uuid } ?: accounts.firstOrNull()
         } ?: run {
             return if (accounts.isNotEmpty()) accounts[0] else null
         }

@@ -35,6 +35,10 @@ fun parseAmount(
 }
 
 private fun parsePositiveDouble(string: String): Double? {
+    // fork 修复：欧式小数 "12,34" 原被静默丢逗号成 1234（100 倍）；千分位 "1.234,56" 同理
+    if (string.trim().matches(Regex("\\d{1,3}(\\.\\d{3})*,\\d{1,2}"))) {
+        return string.replace(".", "").replace(",", ".").toDoubleOrNull()
+    }
     val cleanedString = string
         .replace("-", "")
         .replace(" ", ".")
@@ -151,7 +155,10 @@ private fun possibleDateFormats(metadata: DateMetadata): List<String> {
             "yyyy d MMM H:mm",
             "yyyy d MMM HH:mm",
             "yyyy d MMM",
-            "yyyy dd MMM"
+            "yyyy dd MMM",
+            // fork 修复：ISO T 格式（自家导出的格式此前导不回去）
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm"
         )
 
         DateMetadata.MonthFirst -> listOf(

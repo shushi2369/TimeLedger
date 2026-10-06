@@ -26,4 +26,11 @@ interface WriteTagAssociationDao {
 
     @Query("DELETE FROM tags_association WHERE associatedId = :associatedId")
     suspend fun deleteAssociationsByAssociateId(associatedId: UUID)
+
+    // fork 修复：删账户批量删交易时同步清标签关联（子查询一次删净）
+    @Query(
+        "DELETE FROM tags_association WHERE associatedId IN " +
+                "(SELECT id FROM transactions WHERE accountId = :accountId OR toAccountId = :accountId)"
+    )
+    suspend fun deleteAssociationsByAccount(accountId: UUID)
 }

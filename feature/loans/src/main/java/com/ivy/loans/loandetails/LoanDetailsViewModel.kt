@@ -337,9 +337,13 @@ class LoanDetailsViewModel @Inject constructor(
                 loanTotalAmount.doubleValue = totalAmount
             }
 
+            // fork 修复：贷款已不存在（恢复备份后返回栈重载）时原 !! 直接 NPE
+            val currentLoan = loan.value
             associatedTransaction = ioThread {
-                transactionRepository.findLoanTransaction(loanId = loan.value!!.id).let {
-                    it?.toLegacy(transactionMapper)
+                currentLoan?.let {
+                    transactionRepository.findLoanTransaction(loanId = it.id).let { tx ->
+                        tx?.toLegacy(transactionMapper)
+                    }
                 }
             }
 
@@ -374,6 +378,9 @@ class LoanDetailsViewModel @Inject constructor(
             loanCreator.edit(loan) {
                 load(loanId = it.id)
             }
+
+            // fork 修复：原 waitModalVisible 置 true 后无处置回，确认框永久遮挡页面
+            waitModalVisible.value = false
 
             TestIdlingResource.decrement()
         }

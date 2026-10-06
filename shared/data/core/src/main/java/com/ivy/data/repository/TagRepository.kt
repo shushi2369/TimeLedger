@@ -154,6 +154,13 @@ class TagRepository @Inject constructor(
         }
     }
 
+    /** fork 修复：删除账户时批量清其全部交易的标签关联。 */
+    suspend fun deleteAssociationsByAccount(accountId: UUID) {
+        withContext(dispatchersProvider.io) {
+            writeTagAssociationDao.deleteAssociationsByAccount(accountId)
+        }
+    }
+
     suspend fun save(value: Tag): Unit = memo.save(value) {
         writeTagDao.save(with(mapper) { it.toEntity() })
     }

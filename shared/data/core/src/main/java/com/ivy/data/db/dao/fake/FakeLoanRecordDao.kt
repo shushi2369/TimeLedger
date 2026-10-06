@@ -10,6 +10,8 @@ import java.util.UUID
 class FakeLoanRecordDao : LoanRecordDao, WriteLoanRecordDao {
     private val items = mutableListOf<LoanRecordEntity>()
 
+    override suspend fun deletedByLoanId(loanId: UUID) { /* test stub */ }
+
     override suspend fun findAll(): List<LoanRecordEntity> {
         return items
     }

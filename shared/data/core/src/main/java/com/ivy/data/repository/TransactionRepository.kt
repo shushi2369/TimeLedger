@@ -284,6 +284,8 @@ class TransactionRepository @Inject constructor(
     suspend fun deleteAllByAccountId(accountId: AccountId) {
         withContext(dispatchersProvider.io) {
             // fork 修复：同步删除转入该账户的转账（见 WriteTransactionDao.deleteAllByToAccountId）
+            // 及其标签关联（防孤儿关联虚增标签计数）
+            tagRepository.deleteAssociationsByAccount(accountId.value)
             writeTransactionDao.deleteAllByToAccountId(accountId.value)
             writeTransactionDao.deleteAllByAccountId(accountId.value)
         }

@@ -126,8 +126,9 @@ fun BoxWithConstraintsScope.ChooseStartDateOfMonthModal(
 
         NumberRow(
             selectedNumber = selectedStartDateOfMonth,
+            // fork 修复：仅提供 1..28（29/30/31 在短月产生期间盲区）
             fromInclusive = 26,
-            toInclusive = 30
+            toInclusive = 28
         ) {
             save(
                 number = it,
@@ -137,18 +138,6 @@ fun BoxWithConstraintsScope.ChooseStartDateOfMonthModal(
         }
 
         Spacer(Modifier.height(16.dp))
-
-        NumberRow(
-            selectedNumber = selectedStartDateOfMonth,
-            fromInclusive = 31,
-            toInclusive = 31,
-        ) {
-            save(
-                number = it,
-                onStartDateOfMonthSelected = onStartDateOfMonthSelected,
-                dismiss = dismiss
-            )
-        }
 
         Spacer(Modifier.height(8.dp))
     }

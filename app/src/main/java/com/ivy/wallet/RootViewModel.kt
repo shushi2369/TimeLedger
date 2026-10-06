@@ -37,6 +37,7 @@ import javax.inject.Inject
 @HiltViewModel
 @Suppress("LongParameterList", "TooManyFunctions")
 class RootViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
     private val ivyContext: IvyWalletCtx,
     private val nav: Navigation,
     private val settingsDao: SettingsDao,
@@ -167,10 +168,23 @@ class RootViewModel @Inject constructor(
 
     fun lockApp() {
         _appLocked.value = true
+        // fork 修复：锁定后刷新小部件（原桌面继续显示完整余额，updatePeriodMillis=0 不自更新）
+        com.ivy.widgets.WidgetBase.updateBroadcast(
+            appContext,
+            com.ivy.widget.balance.WalletBalanceWidgetReceiver::class.java
+        )
     }
 
     fun unlockApp() {
         _appLocked.value = false
+        refreshWidgets()
+    }
+
+    private fun refreshWidgets() {
+        com.ivy.widgets.WidgetBase.updateBroadcast(
+            appContext,
+            com.ivy.widget.balance.WalletBalanceWidgetReceiver::class.java
+        )
     }
 
     private val userInactiveTime = AtomicLong(0)
