@@ -107,6 +107,12 @@ class TimeTrackViewModel @Inject constructor(
      * 单计时模式，避免并行计时的记账复杂度。
      * 副作用：同步通知栏计时常驻（TimerService）。
      */
+    /** 结算未完成的暂停段（pausedAt 起到 now），返回可安全写入 endedAt 的实体。 */
+    private fun settlePause(e: TimeEntryEntity, now: Long): TimeEntryEntity =
+        if (e.pausedAt != null) {
+            e.copy(pausedMs = e.pausedMs + (now - e.pausedAt), pausedAt = null)
+        } else e
+
     fun toggle(activityId: String) {
         viewModelScope.launch {
             var startedAt: Long? = null
@@ -115,7 +121,8 @@ class TimeTrackViewModel @Inject constructor(
                     val now = System.currentTimeMillis()
                     val running = entryDao.findRunning()
                     if (running != null) {
-                        entryDao.save(running.copy(endedAt = now, pausedAt = null))
+                        // fork 修复：暂停态直接停止会丢未结算的暂停尾段（时长虚增）
+                        entryDao.save(settlePause(running, now).copy(endedAt = now))
                     }
                     if (running == null || running.activityId != activityId) {
                         val entry = TimeEntryEntity(
@@ -184,11 +191,9 @@ class TimeTrackViewModel @Inject constructor(
             timerMutex.withLock {
                 withContext(Dispatchers.IO) {
                     entryDao.findRunning()?.let { running ->
+                        val now = System.currentTimeMillis()
                         entryDao.save(
-                            running.copy(
-                                endedAt = System.currentTimeMillis(),
-                                pausedAt = null,
-                            )
+                            settlePause(running, now).copy(endedAt = now)
                         )
                     }
                 }
@@ -200,14 +205,17 @@ class TimeTrackViewModel @Inject constructor(
 
     /** 编辑历史记录：起止时间戳 + 备注。 */
     fun updateEntry(entryId: String, startedAt: Long, endedAt: Long?, note: String?) {
+        // fork 修复：拒绝非法时间（结束早于开始产生负时长）与正在计时的条目
+        if (endedAt != null && endedAt <= startedAt) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 entryDao.findBetween(Long.MIN_VALUE, Long.MAX_VALUE)
                     .firstOrNull { it.id == entryId }
                     ?.let {
+                        if (it.endedAt == null) return@let // 计时中条目不可编辑
+                        val settled = settlePause(it.copy(startedAt = startedAt), it.endedAt!!)
                         entryDao.save(
-                            it.copy(
-                                startedAt = startedAt,
+                            settled.copy(
                                 endedAt = endedAt,
                                 note = note?.takeIf { n -> n.isNotBlank() },
                             )
@@ -285,8 +293,9 @@ class TimeTrackViewModel @Inject constructor(
                 withContext(Dispatchers.IO) {
                     entryDao.findRunning()?.let { running ->
                         if (running.activityId == activityId) {
+                            val now = System.currentTimeMillis()
                             entryDao.save(
-                                running.copy(endedAt = System.currentTimeMillis())
+                                settlePause(running, now).copy(endedAt = now)
                             )
                         }
                     }
@@ -313,7 +322,8 @@ class TimeTrackViewModel @Inject constructor(
 
     private suspend fun load(): LoadResult = withContext(Dispatchers.IO) {
         val acts = activityDao.findAll()
-        val actById = acts.associateBy { it.id }
+        // fork 修复：周统计须含已归档活动（否则删除=归档后其历史从周汇总消失）
+        val actById = activityDao.findAllIncludingArchived().associateBy { it.id }
 
         val dayStart = startOfDay(System.currentTimeMillis())
         val dayEnd = dayStart + DAY_MS

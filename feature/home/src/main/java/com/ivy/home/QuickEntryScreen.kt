@@ -389,7 +389,9 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
 
         if (showDatePicker) {
             QuickDatePickerDialog(
-                initialMillis = java.lang.System.currentTimeMillis(),
+                // fork 修复：初始值按 UTC 日历日语义传本地今天（原 now 直传，凌晨会选中昨天）
+                initialMillis = java.time.LocalDate.now()
+                    .atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
                 onConfirm = { date ->
                     viewModel.selectDate(date)
                     showDatePicker = false
@@ -487,8 +489,9 @@ private fun QuickDatePickerDialog(
         confirmButton = {
             TextButton(onClick = {
                 val millis = state.selectedDateMillis ?: return@TextButton
+                // fork 修复：DatePicker 毫秒为 UTC 日历日，按 UTC 反解（系统时区在西半球会偏一天）
                 val date = java.time.Instant.ofEpochMilli(millis)
-                    .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                    .atZone(java.time.ZoneOffset.UTC).toLocalDate()
                 onConfirm(date)
             }) { Text("确定") }
         },

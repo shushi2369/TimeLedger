@@ -1,6 +1,13 @@
 package com.ivy.timetrack
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -94,8 +101,23 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
     var todoInput by remember { mutableStateOf("") }
     var todosDoneExpanded by remember { mutableStateOf(false) }
     var todoRemindTarget by remember { mutableStateOf<TodoEntity?>(null) }
-    var todoTimePickTarget by remember { mutableStateOf<TodoEntity?>(null) }
+    // fork 修复：日期选择器毫秒为 UTC 日历日语义，中间态改存 LocalDate 防时区偏移一天
+    var todoTimePickTarget by remember { mutableStateOf<Pair<TodoEntity, java.time.LocalDate>?>(null) }
     var todoDatePickTarget by remember { mutableStateOf<TodoEntity?>(null) }
+    val notifPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    // Android 13+ 通知运行时权限：此前从未请求，备忘录到点通知被系统静默丢弃
+    val context = LocalContext.current
+    val requestNotifPermIfNeeded = {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        Unit
+    }
 
     Column(
         modifier = Modifier
@@ -215,7 +237,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
                     todo = todo,
                     onToggle = { viewModel.toggleTodo(todo.id) },
                     onDelete = { viewModel.deleteTodo(todo.id) },
-                    onRemind = { todoRemindTarget = todo },
+                    onRemind = { requestNotifPermIfNeeded(); todoRemindTarget = todo },
                     index = index,
                 )
             }
@@ -244,7 +266,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
                             todo = todo,
                             onToggle = { viewModel.toggleTodo(todo.id) },
                             onDelete = { viewModel.deleteTodo(todo.id) },
-                            onRemind = { todoRemindTarget = todo },
+                            onRemind = { requestNotifPermIfNeeded(); todoRemindTarget = todo },
                             index = index,
                         )
                     }
@@ -307,27 +329,31 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
 
         todoDatePickTarget?.let { target ->
             TodoDatePickerDialog(
-                initialMillis = target.remindAt ?: System.currentTimeMillis(),
+                // fork 修复：初始值按 UTC 日历日语义转换（原 now 直传，凌晨会选中昨天）
+                initialMillis = (target.remindAt?.let {
+                    java.time.Instant.ofEpochMilli(it)
+                        .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                } ?: java.time.LocalDate.now())
+                    .atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli(),
                 onConfirm = { dateMillis ->
                     todoDatePickTarget = null
-                    val t = target.copy(remindAt = dateMillis)
-                    todoTimePickTarget = t
+                    val d = java.time.Instant.ofEpochMilli(dateMillis)
+                        .atZone(java.time.ZoneOffset.UTC).toLocalDate()
+                    todoTimePickTarget = target to d
                 },
                 onDismiss = { todoDatePickTarget = null }
             )
         }
 
-        todoTimePickTarget?.let { target ->
+        todoTimePickTarget?.let { (target, pickedDate) ->
             TimePickerDialog(
                 initialMillis = target.remindAt ?: System.currentTimeMillis(),
                 onConfirm = { (hour, minute) ->
-                    val cal = java.util.Calendar.getInstance()
-                    cal.timeInMillis = target.remindAt ?: System.currentTimeMillis()
-                    cal.set(java.util.Calendar.HOUR_OF_DAY, hour)
-                    cal.set(java.util.Calendar.MINUTE, minute)
-                    cal.set(java.util.Calendar.SECOND, 0)
-                    cal.set(java.util.Calendar.MILLISECOND, 0)
-                    viewModel.setTodoRemind(target.id, cal.timeInMillis)
+                    // fork 修复：本地日期+时分直接组本地时间（原 UTC 零点当本地挂钟，西半球偏一天）
+                    val remindAt = pickedDate.atTime(hour, minute)
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .toInstant().toEpochMilli()
+                    viewModel.setTodoRemind(target.id, remindAt)
                     todoTimePickTarget = null
                 },
                 onDismiss = { todoTimePickTarget = null }
@@ -414,21 +440,6 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
                 editEntryTarget = null
             },
             onDismiss = { editEntryTarget = null }
-        )
-    }
-
-    editTarget?.let { target ->
-        EditActivityDialog(
-            activity = target,
-            onSave = { name, color, goalMin ->
-                viewModel.updateActivity(target.id, name, color, goalMin)
-                editTarget = null
-            },
-            onDelete = {
-                viewModel.deleteActivity(target.id)
-                editTarget = null
-            },
-            onDismiss = { editTarget = null }
         )
     }
 }

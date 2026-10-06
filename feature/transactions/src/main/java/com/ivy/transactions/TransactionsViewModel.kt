@@ -696,10 +696,22 @@ class TransactionsViewModel @Inject constructor(
                 .orEmpty()
                 .map { TransactionId(it.associatedId.value) }
         }
+        // fork 修复：空集合传 Room IN () 会 SQLite 语法崩溃（新建 0 笔标签点击即崩）
+        if (associatedIds.isEmpty()) {
+            income.doubleValue = 0.0
+            expenses.doubleValue = 0.0
+            balance.doubleValue = 0.0
+            history.value = persistentListOf()
+            return
+        }
+        val range = period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
         val trans = ioThread {
-            transactionRepository.findByIds(associatedIds).map {
-                with(transactionMapper) { it.toLegacy(transactionMapper) }
-            }
+            // fork 修复：反查页期间条切月应生效（此前恒为全量）
+            transactionRepository.findByIds(associatedIds)
+                .filter { range.includes(it.time) }
+                .map {
+                    with(transactionMapper) { it.toLegacy(transactionMapper) }
+                }
         }
 
         val historyIncomeExpense = calcTrnsIncomeExpenseAct(

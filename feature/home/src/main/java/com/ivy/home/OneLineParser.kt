@@ -19,14 +19,16 @@ object OneLineParser {
         val categoryName: String?, // 分类名（预览用）
     )
 
-    /** 带单位的金额优先：12元 / 35.5块 / 100块钱 */
-    private val AMOUNT_WITH_UNIT = Regex("(\\d+(?:\\.\\d+)?)\\s*(?:元|块|块钱)")
+    /** 口语角数：35块5 / 35块毛5 = 35.5 */
+    private val AMOUNT_JIAO = Regex("(\\d+)块(?:毛)?([0-9])(?![0-9.])")
+    /** 带单位的金额优先：12元 / 35.5块 / 1,000块钱 */
+    private val AMOUNT_WITH_UNIT = Regex("(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?)\\s*(?:元|块|块钱)")
     /** 裸数字（无单位时取最后一个，避免误抓日期里的数字） */
     private val BARE_NUMBER = Regex("(\\d+(?:\\.\\d+)?)")
 
-    /** 收入信号词 */
+    /** 收入信号词（fork 补：退款应记收入） */
     private val INCOME_WORDS =
-        listOf("到账", "收入", "工资", "红包", "收款", "收到", "报销", "进账", "奖金", "分红")
+        listOf("到账", "收入", "工资", "红包", "收款", "收到", "报销", "进账", "奖金", "分红", "退款")
 
     /** 关键词组 → 类别候选名（按用户已有类别名匹配，未命中则未分类） */
     private val CATEGORY_HINTS: List<Pair<List<String>, List<String>>> = listOf(
@@ -45,8 +47,14 @@ object OneLineParser {
         val t = text.trim()
         if (t.isEmpty()) return null
 
-        // 金额：带单位优先，否则最后一个独立数字
-        val amount: Double = AMOUNT_WITH_UNIT.find(t)?.groupValues?.get(1)?.toDoubleOrNull()
+        // 金额：口语角数（35块5）> 带单位（千分位去逗号）> 最后一个独立数字
+        val amount: Double = AMOUNT_JIAO.find(t)
+            ?.let { m ->
+                val yuan = m.groupValues[1].toDoubleOrNull() ?: return@let null
+                val jiao = m.groupValues[2].toDoubleOrNull() ?: 0.0
+                yuan + jiao / 10.0
+            }
+            ?: AMOUNT_WITH_UNIT.find(t)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
             ?: BARE_NUMBER.findAll(t).lastOrNull()?.groupValues?.get(1)?.toDoubleOrNull()
             ?: return null
         if (amount <= 0.0) return null

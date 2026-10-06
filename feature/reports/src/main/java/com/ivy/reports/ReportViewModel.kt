@@ -289,8 +289,9 @@ class ReportViewModel @Inject constructor(
                 period.year?.let { selectedYear = it }
             }
             range != null -> {
-                val fromUtc = range.from?.atZone(ZoneId.of("UTC"))
-                val toUtc = range.to?.atZone(ZoneId.of("UTC"))
+                // fork 修复：pickYear 用本地日期构造区间，反解须用系统时区（UTC 反解在东八区恒判非全年）
+                val fromUtc = range.from?.atZone(ZoneId.systemDefault())
+                val toUtc = range.to?.atZone(ZoneId.systemDefault())
                 val isFullYear = fromUtc != null &&
                         fromUtc.monthValue == 1 && fromUtc.dayOfMonth == 1 &&
                         toUtc?.let { it.monthValue == 12 && it.dayOfMonth == 31 } == true
@@ -405,13 +406,13 @@ class ReportViewModel @Inject constructor(
 
             val accountFilterIdList = scope.async { reportFilter.accounts.map { it.id } }
 
-            val timeNowUTC = timeNowUTC()
+            // fork 修复：Instant 对 Instant 比较（原本地挂钟 vs UTC 挂钟差时区小时数，逾期误判为即将到期）
+            val nowInstant = timeProvider.utcNow()
 
             // Upcoming
             val upcomingTransactionsList = transactionsList
                 .filter {
-                    !it.settled && it.time.atZone(ZoneId.systemDefault()).toLocalDateTime()
-                        .isAfter(timeNowUTC)
+                    !it.settled && it.time.isAfter(nowInstant)
                 }
                 .sortedBy { it.time }
                 .toImmutableList()
@@ -425,8 +426,7 @@ class ReportViewModel @Inject constructor(
             )
             // Overdue
             val overdue = transactionsList.filter {
-                !it.settled && it.time.atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    .isBefore(timeNowUTC)
+                !it.settled && it.time.isBefore(nowInstant)
             }.sortedByDescending {
                 it.time
             }.toImmutableList()
@@ -507,31 +507,28 @@ class ReportViewModel @Inject constructor(
             filter.period?.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
 
         val transactions = if (filter.includedTags.isNotEmpty()) {
-            tagRepository.findByAllAssociatedIdForTagId(filter.includedTags)
+            val includedIds = tagRepository.findByAllAssociatedIdForTagId(filter.includedTags)
                 .asSequence()
                 .flatMap { it.value }
                 .map { TransactionId(it.associatedId.value) }
                 .distinct()
                 .toList()
-                .let {
-                    transactionRepository.findByIds(it)
-                }
+            // fork 修复：空集合传 Room IN () 会 SQLite 崩溃（勾选无交易的标签）
+            if (includedIds.isEmpty()) emptyList() else transactionRepository.findByIds(includedIds)
         } else {
             transactionRepository.findAll()
         }
 
         val excludeableByTagTransactionsIds = if (filter.excludedTags.isNotEmpty()) {
-            tagRepository.findByAllAssociatedIdForTagId(filter.excludedTags)
+            val excludedIds = tagRepository.findByAllAssociatedIdForTagId(filter.excludedTags)
                 .asSequence()
                 .flatMap { it.value }
                 .distinct()
                 .map { TransactionId(it.associatedId.value) }
                 .toList()
-                .let {
-                    transactionRepository.findByIds(it)
-                }.map {
-                    it.id
-                }
+            // fork 修复：空集合传 Room IN () 会 SQLite 崩溃
+            if (excludedIds.isEmpty()) emptyList()
+            else transactionRepository.findByIds(excludedIds).map { it.id }
         } else {
             emptyList()
         }

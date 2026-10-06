@@ -147,6 +147,13 @@ class TagRepository @Inject constructor(
         }
     }
 
+    /** fork 修复：删除交易时清空其全部标签关联，防止孤儿关联虚增标签计数。 */
+    suspend fun deleteAssociationsFor(associatedId: AssociationId) {
+        withContext(dispatchersProvider.io) {
+            writeTagAssociationDao.deleteAssociationsByAssociateId(associatedId.value)
+        }
+    }
+
     suspend fun save(value: Tag): Unit = memo.save(value) {
         writeTagDao.save(with(mapper) { it.toEntity() })
     }

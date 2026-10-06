@@ -110,6 +110,8 @@ fun BoxWithConstraintsScope.AddOrEditTagModal(
                     hasShadow = false,
                     onClick = {
                         onTagDelete(initialTag)
+                        // fork 修复：删除后必须关弹窗，否则再点完成会按 id upsert 复活已删标签
+                        onDismiss()
                     }
                 )
             }

@@ -275,6 +275,8 @@ class TransactionRepository @Inject constructor(
 
     suspend fun deleteById(id: TransactionId) {
         withContext(dispatchersProvider.io) {
+            // fork 修复：同步清理标签关联（原孤儿关联残留，虚增标签交易计数）
+            tagRepository.deleteAssociationsFor(AssociationId(id.value))
             writeTransactionDao.deleteById(id.value)
         }
     }

@@ -9,6 +9,9 @@ interface TimeActivityDao {
     @Query("SELECT * FROM time_activity WHERE archived = 0 ORDER BY orderNum ASC")
     suspend fun findAll(): List<TimeActivityEntity>
 
+    @Query("SELECT * FROM time_activity ORDER BY orderNum ASC")
+    suspend fun findAllIncludingArchived(): List<TimeActivityEntity>
+
     @Query("SELECT COUNT(*) FROM time_activity")
     suspend fun count(): Int
 

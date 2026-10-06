@@ -67,11 +67,10 @@ class Navigation @Inject constructor() {
       switchScreen(backStack.pop())
       return true
     }
-    // fork 修复：冷启动直达主页 Tab 后首次 navigateTo 的页面（lastScreen==null 不入栈）
-    // 栈空可弹，工具栏 × 无响应——此处回主页 Tab（currentScreen=null 即 Tab 根）
-    if (currentScreen != null) {
-      currentScreen = null
-      lastScreen = null
+    // fork 修复：冷启动小部件直达等场景首次 navigateTo 不入栈，栈空可弹时
+    // 回主页 Tab（主页本身是导航项 MainScreen；置 null 会渲染空白页）
+    if (currentScreen != null && currentScreen !is MainScreen) {
+      switchScreen(MainScreen)
       return true
     }
     return false

@@ -22,7 +22,7 @@ interface TimeEntryDao {
     suspend fun findBetween(from: Long, to: Long): List<TimeEntryEntity>
 
     @Query(
-        "SELECT activityId, SUM(endedAt - startedAt) AS totalMs FROM time_entry " +
+        "SELECT activityId, SUM(endedAt - startedAt - pausedMs) AS totalMs FROM time_entry " +
                 "WHERE endedAt IS NOT NULL AND startedAt >= :since " +
                 "GROUP BY activityId ORDER BY totalMs DESC"
     )

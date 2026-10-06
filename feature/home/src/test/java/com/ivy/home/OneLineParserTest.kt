@@ -38,10 +38,23 @@ class OneLineParserTest {
     }
 
     @Test
+    fun `千分位金额 1,000元 解析为1000`() {
+        val p = OneLineParser.parse("买手机花了1,000元", categories, today)!!
+        assertEquals(1000.0, p.amount, 0.001)
+    }
+
+    @Test
+    fun `退款20元 记为收入`() {
+        val p = OneLineParser.parse("退款20元到账", categories, today)!!
+        assertEquals(20.0, p.amount, 0.001)
+        assertEquals(true, p.isIncome)
+    }
+
+    @Test
     fun `午饭花了35块5 解析为食物和饮料`() {
         val p = OneLineParser.parse("午饭花了35块5", categories, today)!!
-        // "35块5" 的 AMOUNT_WITH_UNIT 抓到 35；裸数字兜底取最后一个 = 5 → 断言取单位优先的 35
-        assertEquals(35.0, p.amount, 0.001)
+        // fork 修复：口语角数 35块5 = 35.5（原被截成 35 少记 5 毛）
+        assertEquals(35.5, p.amount, 0.001)
         assertEquals("食物和饮料", p.categoryName)
         assertEquals(today, p.date)
     }

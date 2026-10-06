@@ -59,6 +59,12 @@ class TagsViewModel @Inject constructor(
     fun addTag(name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             NotBlankTrimmedString.from(name.toLowerCaseLocal()).onRight {
+                // fork 修复：同名标签不重复创建
+                val normalized = it.value
+                if (tagRepository.findAll().any { t -> t.name.value == normalized }) {
+                    refresh()
+                    return@onRight
+                }
                 tagRepository.save(with(tagMapper) { tagMapper.createNewTag(name = it) })
                 refresh()
             }
@@ -67,7 +73,10 @@ class TagsViewModel @Inject constructor(
 
     fun updateTag(oldTag: Tag, newTag: Tag) {
         viewModelScope.launch(Dispatchers.IO) {
-            tagRepository.save(newTag)
+            // fork 修复：仅当标签仍存在才保存（防删除后 upsert 复活）
+            if (tagRepository.findById(oldTag.id) != null) {
+                tagRepository.save(newTag)
+            }
             refresh()
         }
     }
