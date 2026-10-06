@@ -14,7 +14,15 @@ import java.util.UUID
 @Suppress("DataClassDefaultValues")
 @Keep
 @Serializable
-@Entity(tableName = "transactions")
+// fork 修复：主库 transactions 原零索引，主页刷新链高频 WHERE isDeleted/accountId+dateTime 全表扫描
+@Entity(
+    tableName = "transactions",
+    indices = [
+        androidx.room.Index(value = ["isDeleted", "dateTime"]),
+        androidx.room.Index(value = ["accountId", "dateTime"]),
+        androidx.room.Index(value = ["toAccountId"]),
+    ]
+)
 data class TransactionEntity(
     @SerialName("accountId")
     @Serializable(with = KSerializerUUID::class)

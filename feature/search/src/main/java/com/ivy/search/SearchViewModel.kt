@@ -22,6 +22,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -70,11 +72,16 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    // fork 修复：原每键程全表加载且不取消前一协程（打字期间反复全表扫描+结果竞逐）
+    private var searchJob: kotlinx.coroutines.Job? = null
+
     private fun search(query: String) {
         searchQuery.value = query
         val normalizedQuery = query.lowercase().trim()
 
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(300)
             val queryResult = ioThread {
                 val filteredTransactions = allTrnsAct(Unit)
                     .filter { transaction ->

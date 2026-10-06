@@ -311,7 +311,9 @@ private fun CatalogView(state: GuideUiState, vm: LifeGuideViewModel) {
                     )
                 }
                 itemsIndexed(docsInGroup, key = { _, d -> d.id }) { _, doc ->
-                    val number = doc.fileName.removeSuffix(".md").substringBefore('-')
+                    // fork 修复：附录文件名不含分隔符，整名被塞进 46dp 序号列换行撑爆行高；仅纯数字才显示
+                    val rawNumber = doc.fileName.removeSuffix(".md").substringBefore('-')
+                    val number = rawNumber.takeIf { it.all { c -> c.isDigit() } && it.isNotEmpty() } ?: "·"
                     val aInDoc = doc.sections.count { it.evidence == "A" }
                     Row(
                         modifier = Modifier

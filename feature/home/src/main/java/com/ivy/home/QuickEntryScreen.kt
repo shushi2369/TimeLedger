@@ -71,10 +71,16 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
     val state = viewModel.uiState()
     val nav = navigation()
 
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showAddCategory by remember { mutableStateOf(false) }
-    var oneLineExpanded by remember { mutableStateOf(false) }
-    var oneLineText by remember { mutableStateOf("") }
+    // fork 修复：进入页面刷新类别/标签（VM 为 Activity 级不随页面销毁，否则新建类别整个会话不出现）
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
+    // fork 修复：暗色/字号切换重建 Activity 时保留输入与弹窗状态（原零 rememberSaveable）
+    var showDatePicker by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var showAddCategory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var oneLineExpanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var oneLineText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier

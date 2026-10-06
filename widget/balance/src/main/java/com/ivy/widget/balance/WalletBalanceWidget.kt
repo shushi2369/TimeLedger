@@ -145,6 +145,11 @@ class WalletBalanceWidgetReceiver : GlanceAppWidgetReceiver() {
 
     private fun updateData(context: Context) {
         coroutineScope.launch {
+            // fork 修复：桌面没有任何小部件时跳过全库余额计算（冷启动/每次更新白算）
+            val manager = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+            if (manager.getGlanceIds(WalletBalanceWidget::class.java).isEmpty()) {
+                return@launch
+            }
             val settings = settingsAct(Unit)
             val appLocked = com.ivy.legacy.utils.ioThread {
                 sharedPrefs.getBoolean(

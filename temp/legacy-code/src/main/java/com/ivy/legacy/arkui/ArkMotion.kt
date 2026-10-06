@@ -91,7 +91,9 @@ fun ArkStaggeredIn(
 
 /** 未完成元素的呼吸脉动系数（0.72~1，警示感，周期 1.6s）。 */
 @Composable
-fun rememberArkPulse(): Float {
+fun rememberArkPulse(enabled: Boolean = true): Float {
+    // fork 修复：disabled 直接返回 1f（原无条件启动无限动画，完成态行仍空转 60fps）
+    if (!enabled) return 1f
     val transition = rememberInfiniteTransition(label = "arkPulse")
     val pulse by transition.animateFloat(
         initialValue = 0.72f,

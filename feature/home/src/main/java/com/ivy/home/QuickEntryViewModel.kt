@@ -71,6 +71,11 @@ class QuickEntryViewModel @Inject constructor(
     private var categoriesVersion by mutableStateOf(0)
 
     init {
+        refresh()
+    }
+
+    /** fork 修复：VM 挂在 Activity 级 ViewModelStore 不随页面销毁，进入时刷新类别/标签（否则新建类别整个会话不出现）。 */
+    fun refresh() {
         viewModelScope.launch {
             // 查询在 IO 线程，Compose 状态赋值必须回主线程（后台线程写 snapshot 会崩）
             val (loadedCategories, currency) = withContext(Dispatchers.IO) {
@@ -173,7 +178,8 @@ class QuickEntryViewModel @Inject constructor(
     }
 
     fun onNoteChange(value: String) {
-        note = value
+        // fork 修复：备注限长（原无上限直通交易标题，超长粘贴撑破列表行）
+        note = value.take(200)
     }
 
     /** 一句话记账：解析（实时预览用）。 */
@@ -208,6 +214,10 @@ class QuickEntryViewModel @Inject constructor(
                         }
                     }
                 }
+
+                // fork 修复：与 finish() 对齐，刷新桌面小部件并通知数据变化
+                refreshWidget(com.ivy.widget.balance.WalletBalanceWidgetReceiver::class.java)
+                ivyWalletCtx.notifyDataChanged()
 
                 val direction = if (parsed.isIncome) "收入" else "支出"
                 val amountText = java.text.DecimalFormat("#,##0.00").format(parsed.amount)
@@ -299,6 +309,7 @@ class QuickEntryViewModel @Inject constructor(
                                         com.ivy.data.model.TransactionId(id)
                                     )
                                     ivyWalletCtx.notifyDataChanged()
+                                    refreshWidget(com.ivy.widget.balance.WalletBalanceWidgetReceiver::class.java)
                                 }
                             }
                         }

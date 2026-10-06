@@ -98,7 +98,7 @@ fun TimeTrackTab(viewModel: TimeTrackViewModel = viewModel()) {
     var showAddActivity by remember { mutableStateOf(false) }
     var editEntryTarget by remember { mutableStateOf<TodayEntry?>(null) }
     var editTarget by remember { mutableStateOf<TimeActivityEntity?>(null) }
-    var todoInput by remember { mutableStateOf("") }
+    var todoInput by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var todosDoneExpanded by remember { mutableStateOf(false) }
     var todoRemindTarget by remember { mutableStateOf<TodoEntity?>(null) }
     // fork 修复：日期选择器毫秒为 UTC 日历日语义，中间态改存 LocalDate 防时区偏移一天
@@ -652,7 +652,7 @@ private fun SectionTitle(title: String) {
 
 @Composable
 private fun TodayEntryRow(item: TodayEntry, onClick: () -> Unit) {
-    val range = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val range = androidx.compose.runtime.remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val start = range.format(Date(item.entry.startedAt))
     val end = item.entry.endedAt?.let { range.format(Date(it)) } ?: "进行中"
 
@@ -1092,7 +1092,7 @@ private fun TodoRow(
     index: Int = 0,
 ) {
     val dim = todo.done
-    val pulse = rememberArkPulse()
+    val pulse = rememberArkPulse(enabled = !todo.done)
     ArkStaggeredIn(index = index) {
     Row(
         modifier = Modifier

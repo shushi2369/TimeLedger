@@ -528,9 +528,9 @@ class ReportViewModel @Inject constructor(
                 .toList()
             // fork 修复：空集合传 Room IN () 会 SQLite 崩溃
             if (excludedIds.isEmpty()) emptyList()
-            else transactionRepository.findByIds(excludedIds).map { it.id }
+            else transactionRepository.findByIds(excludedIds).map { it.id }.toHashSet()
         } else {
-            emptyList()
+            emptySet()
         }
 
         return transactions

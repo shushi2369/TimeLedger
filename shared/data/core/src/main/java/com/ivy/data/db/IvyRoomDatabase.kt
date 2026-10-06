@@ -76,9 +76,11 @@ import com.ivy.domain.db.migration.Migration125to126_Tags
             from = 121,
             to = 122,
             spec = IvyRoomDatabase.DeleteSEMigration::class
-        )
+        ),
+        // fork 修复：v130→v131 为 transactions 增加查询索引（CREATE INDEX 非破坏性，可自动迁移）
+        AutoMigration(from = 130, to = 131)
     ],
-    version = 130,
+    version = 131,
     exportSchema = true
 )
 @TypeConverters(RoomTypeConverters::class)

@@ -75,11 +75,14 @@ class LifeGuideViewModel @Inject constructor(
 
     fun onQueryChange(q: String) {
         query = q
+        // fork 修复：检索移出主线程（1.6MB 内容逐键扫描，中低端机掉帧）
         results = if (q.isBlank()) {
             emptyList()
         } else {
             val loaded = docs
-            searchDocs(loaded, q)
+            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.Default) {
+                searchDocs(loaded, q)
+            }
         }
     }
 
