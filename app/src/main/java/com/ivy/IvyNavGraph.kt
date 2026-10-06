@@ -8,6 +8,7 @@ import com.ivy.attributions.AttributionsScreenImpl
 import com.ivy.balance.BalanceScreen
 import com.ivy.budgets.BudgetScreen
 import com.ivy.categories.CategoriesScreen
+import com.ivy.tags.TagsScreenImpl
 import com.ivy.contributors.ContributorsScreenImpl
 import com.ivy.disclaimer.DisclaimerScreenImpl
 import com.ivy.exchangerates.ExchangeRatesScreen
@@ -23,6 +24,7 @@ import com.ivy.navigation.BalanceScreen
 import com.ivy.navigation.BudgetScreen
 import com.ivy.navigation.CSVScreen
 import com.ivy.navigation.CategoriesScreen
+import com.ivy.navigation.TagsScreen
 import com.ivy.navigation.ContributorsScreen
 import com.ivy.navigation.DisclaimerScreen
 import com.ivy.navigation.EditPlannedScreen
@@ -73,6 +75,7 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         is TransactionsScreen -> TransactionsScreen(screen = screen)
         is PieChartStatisticScreen -> PieChartStatisticScreen(screen = screen)
         is CategoriesScreen -> CategoriesScreen(screen = screen)
+        is TagsScreen -> TagsScreenImpl(screen = screen)
         is SettingsScreen -> SettingsScreen()
         is PlannedPaymentsScreen -> PlannedPaymentsScreen(screen = screen)
         is EditPlannedScreen -> EditPlannedScreen(screen = screen)

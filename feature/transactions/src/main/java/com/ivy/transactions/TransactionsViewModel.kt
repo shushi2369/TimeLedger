@@ -19,6 +19,9 @@ import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
+import com.ivy.data.model.Tag
+import com.ivy.data.model.TagId
+import com.ivy.data.model.TransactionId
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
 import com.ivy.data.model.primitive.NotBlankTrimmedString
@@ -27,6 +30,7 @@ import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.design.l0_system.Gray
 import com.ivy.design.l0_system.RedLight
 import com.ivy.domain.features.Features
 import com.ivy.frp.then
@@ -34,6 +38,7 @@ import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.data.model.toCloseTimeRange
 import com.ivy.legacy.datamodel.temp.toImmutableLegacyTags
+import com.ivy.legacy.datamodel.temp.toLegacy
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.domain.deprecated.logic.AccountCreator
 import com.ivy.legacy.utils.computationThread
@@ -668,6 +673,53 @@ class TransactionsViewModel @Inject constructor(
         ).toImmutableList()
     }
 
+    /** 标签反查：列出带该标签的交易（fork 增补，v0.16.0）。 */
+    private suspend fun initForTag(tagId: UUID) {
+        initWithTransactions.value = false
+        val tag = ioThread {
+            tagRepository.findById(TagId(tagId))
+        }
+        // 头部用 category 槽位显示标签名
+        category.value = Category(
+            name = NotBlankTrimmedString.unsafe(tag?.name?.value ?: "标签"),
+            color = ColorInt(
+                tag?.color?.value?.takeIf { it != 0 } ?: Gray.toArgb()
+            ),
+            icon = null,
+            id = CategoryId(UUID.randomUUID()),
+            orderNum = 0.0,
+        )
+
+        val associatedIds = ioThread {
+            tagRepository.findByAllAssociatedIdForTagId(listOf(TagId(tagId)))
+                .orEmpty()[TagId(tagId)]
+                .orEmpty()
+                .map { TransactionId(it.associatedId.value) }
+        }
+        val trans = ioThread {
+            transactionRepository.findByIds(associatedIds).map {
+                with(transactionMapper) { it.toLegacy(transactionMapper) }
+            }
+        }
+
+        val historyIncomeExpense = calcTrnsIncomeExpenseAct(
+            LegacyCalcTrnsIncomeExpenseAct.Input(
+                transactions = trans,
+                accounts = accounts.value,
+                baseCurrency = baseCurrency.value
+            )
+        )
+        income.doubleValue = historyIncomeExpense.income.toDouble()
+        expenses.doubleValue = historyIncomeExpense.expense.toDouble()
+        balance.doubleValue = income.doubleValue - expenses.doubleValue
+        history.value = trnsWithDateDivsAct(
+            LegacyTrnsWithDateDivsAct.Input(
+                baseCurrency = baseCurrency.value,
+                transactions = trans
+            )
+        ).toImmutableList()
+    }
+
     private fun reset() {
         account.value = null
         category.value = null
@@ -852,6 +904,10 @@ class TransactionsViewModel @Inject constructor(
                 sharedPrefs.getBoolean(SharedPrefs.TRANSFERS_AS_INCOME_EXPENSE, false)
 
             when {
+                screen.tagId != null -> {
+                    initForTag(screen.tagId!!)
+                }
+
                 screen.accountId != null -> {
                     initForAccount(screen.accountId!!)
                 }

@@ -101,7 +101,7 @@ fun BoxWithConstraintsScope.AddOrEditTagModal(
                 .padding(start = 0.dp, end = 32.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ModalTitle(text = if (initialTag == null) "Tag Name" else "Edit Tag Name")
+            ModalTitle(text = if (initialTag == null) "新建标签" else "重命名标签")
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -124,7 +124,7 @@ fun BoxWithConstraintsScope.AddOrEditTagModal(
             dividerModifier = Modifier
                 .padding(horizontal = 24.dp),
             value = titleTextFieldValue,
-            hint = "Enter TagName",
+            hint = "输入标签名",
             keyboardOptions = KeyboardOptions(
                 autoCorrect = true,
                 keyboardType = KeyboardType.Text,

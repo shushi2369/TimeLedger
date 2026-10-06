@@ -527,6 +527,15 @@ private fun QuickAccess(
             }
 
             Spacer(Modifier.weight(1f))
+
+            MoreMenuButton(
+                icon = R.drawable.ic_vue_money_tag,
+                label = "标签"
+            ) {
+                nav.navigateTo(com.ivy.navigation.TagsScreen)
+            }
+
+            Spacer(Modifier.weight(1f))
         }
     }
 }

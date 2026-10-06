@@ -301,7 +301,7 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 标签多选（方舟风 chips，横滚）
+            // 标签多选（方舟风 chips，横滚；尾随"+ 新建"打通管理页）
             if (state.availableTags.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
                 Row(
@@ -310,6 +310,18 @@ fun QuickEntryScreen(screen: QuickEntryScreen) {
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Text(
+                        text = "+ 新建",
+                        style = UI.typo.c.style(
+                            fontWeight = FontWeight.Bold,
+                            color = UI.colors.primary
+                        ),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(UI.colors.medium)
+                            .clickable { nav.navigateTo(com.ivy.navigation.TagsScreen) }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
                     state.availableTags.forEach { tag ->
                         val selected = tag.id.value in state.selectedTagIds
                         Text(

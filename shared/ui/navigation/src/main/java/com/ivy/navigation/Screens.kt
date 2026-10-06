@@ -46,7 +46,8 @@ data class TransactionsScreen(
     val unspecifiedCategory: Boolean? = false,
     val transactionType: TransactionType? = null,
     val accountIdFilterList: List<UUID> = persistentListOf(),
-    val transactions: List<Transaction> = persistentListOf()
+    val transactions: List<Transaction> = persistentListOf(),
+    val tagId: UUID? = null,
 ) : Screen {
     override val isLegacy: Boolean
         get() = true
@@ -92,6 +93,11 @@ data object PlannedPaymentsScreen : Screen {
 }
 
 data object CategoriesScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}
+
+data object TagsScreen : Screen {
     override val isLegacy: Boolean
         get() = true
 }
